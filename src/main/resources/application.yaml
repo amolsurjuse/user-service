@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: ${ENV_USER_DATASOURCE_URL:jdbc:postgresql://localhost:5432/user_db}
+    username: ${ENV_USER_DATASOURCE_USERNAME:appuser}
+    password: ${ENV_USER_DATASOURCE_PASSWORD:Password@123}
+    driver-class-name: org.postgresql.Driver
+  liquibase:
+    enabled: ${SPRING_LIQUIBASE_ENABLED:true}
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    default-schema: ${SPRING_LIQUIBASE_DEFAULT_SCHEMA:user_mgmt}
+    liquibase-schema: ${SPRING_LIQUIBASE_LIQUIBASE_SCHEMA:public}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: ${SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA:user_mgmt}
+        jdbc:
+          time_zone: UTC
+
+server:
+  port: ${SERVER_PORT:8082}
+
+app:
+  cors:
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:4200,http://localhost:8080,https://dev.electrahub.com,https://dev.electrahub.com:8443,http://driver-portal-dev.electrahub.com:8080,https://driver-portal-dev.electrahub.com:8443}
+  payment-service:
+    base-url: ${APP_PAYMENT_SERVICE_BASE_URL:http://payment-service:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.electrahub.user: INFO

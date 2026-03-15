@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0000-create-user-mgmt-schema
+      author: codex
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS user_mgmt;
