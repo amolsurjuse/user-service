@@ -61,12 +61,17 @@ public class RbacPolicyService {
         String normalizedDecision = normalizeDecision(request.defaultDecision());
         List<RbacPolicyRule> rules = buildRules(request.rules());
 
+        // Remove existing rows first to avoid unique key conflicts on (policy_id, sort_order)
+        // when JPA issues inserts before orphan deletes in a single flush cycle.
+        policy.replaceRules(List.of());
+        rbacPolicyRepository.saveAndFlush(policy);
+
         policy.setRoleHierarchy(normalizedHierarchy);
         policy.setDefaultDecision(normalizedDecision);
         policy.replaceRules(rules);
         policy.bumpVersion();
 
-        RbacPolicy saved = rbacPolicyRepository.save(policy);
+        RbacPolicy saved = rbacPolicyRepository.saveAndFlush(policy);
         gatewayRbacCacheInvalidationClient.invalidate();
         return toAdminResponse(saved);
     }
