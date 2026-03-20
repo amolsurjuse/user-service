@@ -1,6 +1,11 @@
 package com.electrahub.user.service;
 
 import com.electrahub.user.api.dto.AddressDto;
+import com.electrahub.user.api.dto.AdminResetPasswordRequest;
+import com.electrahub.user.api.dto.AdminUpdateUserRequest;
+import com.electrahub.user.api.dto.AdminUserDetailResponse;
+import com.electrahub.user.api.dto.AdminUserSearchResponse;
+import com.electrahub.user.api.dto.AdminUserSummaryResponse;
 import com.electrahub.user.api.dto.AuthenticateUserRequest;
 import com.electrahub.user.api.dto.CountryResponse;
 import com.electrahub.user.api.dto.RegisterUserRequest;
@@ -20,7 +25,11 @@ import com.electrahub.user.repository.AddressRepository;
 import com.electrahub.user.repository.CountryRepository;
 import com.electrahub.user.repository.RoleRepository;
 import com.electrahub.user.repository.UserRepository;
+import com.electrahub.user.security.AuthenticatedUser;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -108,6 +117,7 @@ public class UserManagementService {
 
     @Transactional(readOnly = true)
     public UserProfileResponse getProfile(UUID userId) {
+        requireSelfOrSystemAdmin(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + userId));
         return toProfile(user);
@@ -115,57 +125,52 @@ public class UserManagementService {
 
     @Transactional
     public UserProfileResponse updateProfile(UUID userId, UpdateUserProfileRequest request) {
+        requireSelfOrSystemAdmin(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + userId));
 
         user.setFirstName(normalizeText(request.firstName()));
         user.setLastName(normalizeText(request.lastName()));
-
-        AddressDto addressDto = request.address();
-        Country country = resolveCountry(addressDto.countryIsoCode());
-        if (user.getAddress() == null) {
-            Address address = new Address(
-                    UUID.randomUUID(),
-                    normalizeText(addressDto.street()),
-                    normalizeText(addressDto.city()),
-                    normalizeText(addressDto.state()),
-                    normalizeText(addressDto.postalCode()),
-                    country
-            );
-            addressRepository.save(address);
-            user.setAddress(address);
-        } else {
-            Address address = user.getAddress();
-            address.setStreet(normalizeText(addressDto.street()));
-            address.setCity(normalizeText(addressDto.city()));
-            address.setState(normalizeText(addressDto.state()));
-            address.setPostalCode(normalizeText(addressDto.postalCode()));
-            address.setCountry(country);
-        }
+        applyAddress(user, request.address());
 
         return toProfile(user);
     }
 
     @Transactional(readOnly = true)
     public UserSearchResponse search(String query, int limit, int offset) {
+        AuthenticatedUser actor = currentUser();
+        if (!actor.hasRole("SYSTEM_ADMIN")) {
+            return searchCurrentUser(query, limit, offset, actor.userId());
+        }
+
         int safeLimit = Math.max(1, Math.min(limit, 200));
         int safeOffset = Math.max(0, offset);
-
         int page = safeOffset / safeLimit;
-        var pageable = PageRequest.of(page, safeLimit);
+        String normalizedQuery = normalizeQuery(query);
 
-        var pageResult = userRepository.search(normalizeQuery(query), pageable);
+        var pageResult = userRepository.searchRegularUsers(normalizedQuery, PageRequest.of(page, safeLimit));
         var items = pageResult.getContent().stream()
                 .map(this::toSummary)
                 .toList();
 
-        long total = userRepository.countSearch(normalizeQuery(query));
-        return new UserSearchResponse(items, total, safeLimit, safeOffset);
+        long total = userRepository.countSearchRegularUsers(normalizedQuery);
+        int totalPages = Math.max(pageResult.getTotalPages(), total > 0 ? 1 : 0);
+        return new UserSearchResponse(items, total, safeLimit, safeOffset, page, totalPages, pageResult.hasNext(), pageResult.hasPrevious());
     }
 
     @Transactional(readOnly = true)
     public UserCountResponse count(String query) {
-        long count = userRepository.countSearch(normalizeQuery(query));
+        AuthenticatedUser actor = currentUser();
+        if (!actor.hasRole("SYSTEM_ADMIN")) {
+            long total = matchesUserSearch(
+                    userRepository.findById(actor.userId())
+                            .orElseThrow(() -> new NotFoundException("User not found: " + actor.userId())),
+                    normalizeQuery(query)
+            ) ? 1 : 0;
+            return new UserCountResponse(normalizeQuery(query), total);
+        }
+
+        long count = userRepository.countSearchRegularUsers(normalizeQuery(query));
         return new UserCountResponse(normalizeQuery(query), count);
     }
 
@@ -174,6 +179,72 @@ public class UserManagementService {
         return countryRepository.findByEnabledTrueOrderByNameAsc().stream()
                 .map(c -> new CountryResponse(c.getIsoCode(), c.getName(), c.getDialCode()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AdminUserSearchResponse searchAdminUsers(String query, int limit, int offset) {
+        int safeLimit = Math.max(1, Math.min(limit, 200));
+        int safeOffset = Math.max(0, offset);
+        int page = safeOffset / safeLimit;
+        String normalizedQuery = normalizeQuery(query);
+
+        var pageResult = userRepository.searchSystemAdmins(normalizedQuery, PageRequest.of(page, safeLimit));
+        var items = pageResult.getContent().stream()
+                .map(this::toAdminSummary)
+                .toList();
+        long total = userRepository.countSearchSystemAdmins(normalizedQuery);
+        int totalPages = Math.max(pageResult.getTotalPages(), total > 0 ? 1 : 0);
+
+        return new AdminUserSearchResponse(items, total, safeLimit, safeOffset, page, totalPages, pageResult.hasNext(), pageResult.hasPrevious());
+    }
+
+    @Transactional(readOnly = true)
+    public AdminUserDetailResponse getAdminUser(UUID userId) {
+        return toAdminDetail(loadUser(userId));
+    }
+
+    @Transactional
+    public AdminUserDetailResponse updateAdminUser(UUID userId, AdminUpdateUserRequest request) {
+        AuthenticatedUser actor = currentUser();
+        if (actor.userId().equals(userId) && !request.enabled()) {
+            throw new AccessDeniedException("You cannot disable your own account.");
+        }
+
+        User user = loadUser(userId);
+        user.setFirstName(normalizeText(request.firstName()));
+        user.setLastName(normalizeText(request.lastName()));
+        user.setPhoneNumber(normalizeText(request.phoneNumber()));
+        user.setEnabled(request.enabled());
+        applyAddress(user, request.address());
+
+        return toAdminDetail(user);
+    }
+
+    @Transactional
+    public void resetPassword(UUID userId, AdminResetPasswordRequest request) {
+        User user = loadUser(userId);
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword().trim()));
+    }
+
+    @Transactional
+    public void deleteUser(UUID userId) {
+        AuthenticatedUser actor = currentUser();
+        if (actor.userId().equals(userId)) {
+            throw new AccessDeniedException("You cannot delete your own account from the admin console.");
+        }
+
+        User user = loadUser(userId);
+        Address address = user.getAddress();
+
+        user.getRoles().clear();
+        user.setAddress(null);
+        userRepository.saveAndFlush(user);
+        userRepository.delete(user);
+        userRepository.flush();
+
+        if (address != null) {
+            addressRepository.delete(address);
+        }
     }
 
     private Address buildAddress(AddressDto dto) {
@@ -191,6 +262,30 @@ public class UserManagementService {
                 normalizeText(dto.postalCode()),
                 country
         );
+    }
+
+    private void applyAddress(User user, AddressDto addressDto) {
+        Country country = resolveCountry(addressDto.countryIsoCode());
+        if (user.getAddress() == null) {
+            Address address = new Address(
+                    UUID.randomUUID(),
+                    normalizeText(addressDto.street()),
+                    normalizeText(addressDto.city()),
+                    normalizeText(addressDto.state()),
+                    normalizeText(addressDto.postalCode()),
+                    country
+            );
+            addressRepository.save(address);
+            user.setAddress(address);
+            return;
+        }
+
+        Address address = user.getAddress();
+        address.setStreet(normalizeText(addressDto.street()));
+        address.setCity(normalizeText(addressDto.city()));
+        address.setState(normalizeText(addressDto.state()));
+        address.setPostalCode(normalizeText(addressDto.postalCode()));
+        address.setCountry(country);
     }
 
     private String normalizeEmail(String email) {
@@ -221,6 +316,55 @@ public class UserManagementService {
         return user.getAddress().getCountry().getIsoCode();
     }
 
+    private AuthenticatedUser currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser user)) {
+            throw new UnauthorizedException("Authentication required");
+        }
+        return user;
+    }
+
+    private void requireSelfOrSystemAdmin(UUID userId) {
+        AuthenticatedUser actor = currentUser();
+        if (!actor.hasRole("SYSTEM_ADMIN") && !actor.userId().equals(userId)) {
+            throw new AccessDeniedException("You are not allowed to access this user.");
+        }
+    }
+
+    private User loadUser(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+    }
+
+    private UserSearchResponse searchCurrentUser(String query, int limit, int offset, UUID userId) {
+        int safeLimit = Math.max(1, Math.min(limit, 200));
+        int safeOffset = Math.max(0, offset);
+        User user = loadUser(userId);
+        boolean matches = matchesUserSearch(user, normalizeQuery(query));
+        List<UserSummaryResponse> items = matches && safeOffset == 0 ? List.of(toSummary(user)) : List.of();
+        long total = matches ? 1 : 0;
+        int currentPage = safeOffset / safeLimit;
+        int totalPages = total == 0 ? 0 : 1;
+        boolean hasPrevious = currentPage > 0;
+        boolean hasNext = false;
+        return new UserSearchResponse(items, total, safeLimit, safeOffset, currentPage, totalPages, hasNext, hasPrevious);
+    }
+
+    private boolean matchesUserSearch(User user, String normalizedQuery) {
+        if (normalizedQuery.isBlank()) {
+            return true;
+        }
+        String query = normalizedQuery.toLowerCase();
+        return contains(user.getEmail(), query)
+                || contains(user.getFirstName(), query)
+                || contains(user.getLastName(), query)
+                || contains(user.getPhoneNumber(), query);
+    }
+
+    private boolean contains(String source, String query) {
+        return source != null && source.toLowerCase().contains(query);
+    }
+
     private UserPrincipalResponse toPrincipal(User user) {
         return new UserPrincipalResponse(
                 user.getId(),
@@ -239,6 +383,20 @@ public class UserManagementService {
                 user.getPhoneNumber(),
                 user.isEnabled(),
                 user.getCreatedAt()
+        );
+    }
+
+    private AdminUserSummaryResponse toAdminSummary(User user) {
+        return new AdminUserSummaryResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getPhoneNumber(),
+                user.isEnabled(),
+                user.getCreatedAt(),
+                user.getUpdatedAt(),
+                user.getRoles().stream().map(role -> role.getName()).sorted().toList()
         );
     }
 
@@ -278,6 +436,47 @@ public class UserManagementService {
                 countryDialCode,
                 user.isEnabled(),
                 user.getCreatedAt()
+        );
+    }
+
+    private AdminUserDetailResponse toAdminDetail(User user) {
+        String street = null;
+        String city = null;
+        String state = null;
+        String postalCode = null;
+        String countryCode = null;
+        String countryName = null;
+        String countryDialCode = null;
+
+        if (user.getAddress() != null) {
+            street = user.getAddress().getStreet();
+            city = user.getAddress().getCity();
+            state = user.getAddress().getState();
+            postalCode = user.getAddress().getPostalCode();
+            if (user.getAddress().getCountry() != null) {
+                countryCode = user.getAddress().getCountry().getIsoCode();
+                countryName = user.getAddress().getCountry().getName();
+                countryDialCode = user.getAddress().getCountry().getDialCode();
+            }
+        }
+
+        return new AdminUserDetailResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getPhoneNumber(),
+                street,
+                city,
+                state,
+                postalCode,
+                countryCode,
+                countryName,
+                countryDialCode,
+                user.isEnabled(),
+                user.getCreatedAt(),
+                user.getUpdatedAt(),
+                user.getRoles().stream().map(role -> role.getName()).sorted().toList()
         );
     }
 }

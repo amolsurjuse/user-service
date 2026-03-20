@@ -112,6 +112,10 @@ public class User {
         return createdAt;
     }
 
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
     public Set<Role> getRoles() {
         return roles;
     }
@@ -134,5 +138,13 @@ public class User {
 
     public void setAddress(Address address) {
         this.address = address;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }

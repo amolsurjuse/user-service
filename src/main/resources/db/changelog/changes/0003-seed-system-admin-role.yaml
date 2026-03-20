@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0003-seed-system-admin-role
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: select count(*) from roles where name = 'SYSTEM_ADMIN'
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: id
+                  value: "00000000-0000-0000-0000-000000000002"
+              - column:
+                  name: name
+                  value: SYSTEM_ADMIN

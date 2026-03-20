@@ -1,0 +1,3 @@
+app:
+  dev-admin:
+    enabled: ${DEV_APP_DEV_ADMIN_ENABLED:true}

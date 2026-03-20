@@ -26,9 +26,22 @@ server:
 
 app:
   cors:
-    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:4200,http://localhost:8080,https://dev.electrahub.com,https://dev.electrahub.com:8443,http://driver-portal-dev.electrahub.com:8080,https://driver-portal-dev.electrahub.com:8443}
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:4200,http://localhost:4201,http://localhost:4211,http://localhost:8080,https://dev.electrahub.com,https://dev.electrahub.com:8443,http://driver-portal-dev.electrahub.com:8080,https://driver-portal-dev.electrahub.com:8443}
   payment-service:
     base-url: ${APP_PAYMENT_SERVICE_BASE_URL:http://payment-service:8083}
+  security:
+    jwt:
+      issuer: ${APP_SECURITY_JWT_ISSUER:auth-service}
+      secret: ${APP_SECURITY_JWT_SECRET:CHANGE_ME_TO_A_LONG_RANDOM_64+_CHAR_SECRET_CHANGE_ME}
+  dev-admin:
+    enabled: ${APP_DEV_ADMIN_ENABLED:false}
+    email: ${APP_DEV_ADMIN_EMAIL:sysadmin.dev@electrahub.com}
+    password: ${APP_DEV_ADMIN_PASSWORD:Admin@12345}
+    first-name: ${APP_DEV_ADMIN_FIRST_NAME:System}
+    last-name: ${APP_DEV_ADMIN_LAST_NAME:Admin}
+    phone-number: ${APP_DEV_ADMIN_PHONE_NUMBER:+15550000001}
+  dev-user:
+    password: ${APP_DEV_USER_PASSWORD:User@12345}
 
 management:
   endpoints:

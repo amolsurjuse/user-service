@@ -1,0 +1,95 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0004-seed-network-role
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: select count(*) from roles where name = 'NETWORK'
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: id
+                  value: "00000000-0000-0000-0000-000000000010"
+              - column:
+                  name: name
+                  value: NETWORK
+
+  - changeSet:
+      id: 0004-seed-enterprise-role
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: select count(*) from roles where name = 'ENTERPRISE'
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: id
+                  value: "00000000-0000-0000-0000-000000000011"
+              - column:
+                  name: name
+                  value: ENTERPRISE
+
+  - changeSet:
+      id: 0004-seed-location-role
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: select count(*) from roles where name = 'LOCATION'
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: id
+                  value: "00000000-0000-0000-0000-000000000012"
+              - column:
+                  name: name
+                  value: LOCATION
+
+  - changeSet:
+      id: 0004-seed-site-role
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: select count(*) from roles where name = 'SITE'
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: id
+                  value: "00000000-0000-0000-0000-000000000013"
+              - column:
+                  name: name
+                  value: SITE
+
+  - changeSet:
+      id: 0004-seed-support-role
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: select count(*) from roles where name = 'SUPPORT'
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: id
+                  value: "00000000-0000-0000-0000-000000000014"
+              - column:
+                  name: name
+                  value: SUPPORT

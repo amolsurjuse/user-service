@@ -27,6 +27,36 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Page<User> search(String query, Pageable pageable);
 
     @Query("""
+            select distinct u from User u
+            where (:query is null or :query = ''
+                   or lower(u.email) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.firstName, '')) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.lastName, '')) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.phoneNumber, '')) like lower(concat('%', :query, '%')))
+              and u.id not in (
+                   select adminUser.id
+                   from User adminUser
+                   join adminUser.roles adminRole
+                   where adminRole.name = 'SYSTEM_ADMIN'
+              )
+            order by u.createdAt desc
+            """)
+    Page<User> searchRegularUsers(String query, Pageable pageable);
+
+    @Query("""
+            select distinct u from User u
+            join u.roles role
+            where role.name = 'SYSTEM_ADMIN'
+              and (:query is null or :query = ''
+                   or lower(u.email) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.firstName, '')) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.lastName, '')) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.phoneNumber, '')) like lower(concat('%', :query, '%')))
+            order by u.createdAt desc
+            """)
+    Page<User> searchSystemAdmins(String query, Pageable pageable);
+
+    @Query("""
             select count(u) from User u
             where (:query is null or :query = ''
                    or lower(u.email) like lower(concat('%', :query, '%'))
@@ -35,4 +65,32 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    or lower(coalesce(u.phoneNumber, '')) like lower(concat('%', :query, '%')))
             """)
     long countSearch(String query);
+
+    @Query("""
+            select count(u) from User u
+            where (:query is null or :query = ''
+                   or lower(u.email) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.firstName, '')) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.lastName, '')) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.phoneNumber, '')) like lower(concat('%', :query, '%')))
+              and u.id not in (
+                   select adminUser.id
+                   from User adminUser
+                   join adminUser.roles adminRole
+                   where adminRole.name = 'SYSTEM_ADMIN'
+              )
+            """)
+    long countSearchRegularUsers(String query);
+
+    @Query("""
+            select count(distinct u) from User u
+            join u.roles role
+            where role.name = 'SYSTEM_ADMIN'
+              and (:query is null or :query = ''
+                   or lower(u.email) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.firstName, '')) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.lastName, '')) like lower(concat('%', :query, '%'))
+                   or lower(coalesce(u.phoneNumber, '')) like lower(concat('%', :query, '%')))
+            """)
+    long countSearchSystemAdmins(String query);
 }

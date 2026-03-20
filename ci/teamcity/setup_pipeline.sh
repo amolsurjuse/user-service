@@ -122,6 +122,18 @@ set_parameters() {
   echo "Set build parameters"
 }
 
+ensure_agent_requirement() {
+  local requirement_count
+  requirement_count=$(api GET "/app/rest/buildTypes/id:${BUILD_TYPE_ID}/agent-requirements" | jq '.count')
+  if [[ "${requirement_count}" -gt 0 ]]; then
+    echo "Agent requirement already configured"
+    return
+  fi
+
+  api POST "/app/rest/buildTypes/id:${BUILD_TYPE_ID}/agent-requirements" "$(jq -cn '{type:"equals",properties:{property:[{name:"property-name",value:"system.agent.name"},{name:"property-value",value:"teamcity-minimal-agent"}]}}')" >/dev/null
+  echo "Created agent requirement"
+}
+
 create_steps_if_empty() {
   local step_count
   step_count=$(api GET "/app/rest/buildTypes/id:${BUILD_TYPE_ID}" | jq '.steps.count')
@@ -130,7 +142,7 @@ create_steps_if_empty() {
     return
   fi
 
-  api POST "/app/rest/buildTypes/id:${BUILD_TYPE_ID}/steps" "$(jq -cn '{name:"Maven Test",type:"Maven2",properties:{property:[{name:"goals",value:"clean test"},{name:"localRepoScope",value:"agent"},{name:"maven.path",value:"%teamcity.tool.maven.DEFAULT%"},{name:"pomLocation",value:"pom.xml"},{name:"runnerArgs",value:"-Dmaven.test.failure.ignore=true"},{name:"teamcity.step.mode",value:"default"},{name:"userSettingsSelection",value:"userSettingsSelection:default"}]}}')" >/dev/null
+  api POST "/app/rest/buildTypes/id:${BUILD_TYPE_ID}/steps" "$(jq -cn '{name:"Maven Package",type:"Maven2",properties:{property:[{name:"goals",value:"clean package"},{name:"localRepoScope",value:"agent"},{name:"maven.path",value:"%teamcity.tool.maven.DEFAULT%"},{name:"pomLocation",value:"pom.xml"},{name:"teamcity.step.mode",value:"default"},{name:"userSettingsSelection",value:"userSettingsSelection:default"}]}}')" >/dev/null
 
   api POST "/app/rest/buildTypes/id:${BUILD_TYPE_ID}/steps" "$(jq -cn --arg image "${DOCKER_IMAGE}:%build.number%" '{name:"Docker Build",type:"DockerCommand",properties:{property:[{name:"docker.command.type",value:"build"},{name:"docker.image.namesAndTags",value:$image},{name:"docker.push.remove.image",value:"true"},{name:"dockerfile.path",value:"Dockerfile"},{name:"dockerfile.source",value:"PATH"},{name:"teamcity.step.mode",value:"default"}]}}')" >/dev/null
 
@@ -196,6 +208,7 @@ ensure_vcs_root
 ensure_build_type
 attach_vcs_root_if_missing
 set_parameters
+ensure_agent_requirement
 create_steps_if_empty
 ensure_trigger
 
