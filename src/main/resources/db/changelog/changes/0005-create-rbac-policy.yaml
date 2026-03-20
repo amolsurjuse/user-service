@@ -1,0 +1,343 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0005-create-rbac-policy
+      author: codex
+      changes:
+        - createTable:
+            tableName: rbac_policies
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: policy_key
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: role_hierarchy
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: default_decision
+                  type: varchar(8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: rbac_policy_rules
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: policy_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sort_order
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: methods
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: path_pattern
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: effect
+                  type: varchar(8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: allow_anonymous
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: required_roles
+                  type: varchar(400)
+
+        - addForeignKeyConstraint:
+            baseTableName: rbac_policy_rules
+            baseColumnNames: policy_id
+            referencedTableName: rbac_policies
+            referencedColumnNames: id
+            constraintName: fk_rbac_policy_rules_policy
+            onDelete: cascade
+
+        - addUniqueConstraint:
+            tableName: rbac_policy_rules
+            columnNames: policy_id, sort_order
+            constraintName: uq_rbac_policy_rules_policy_sort
+
+        - createIndex:
+            tableName: rbac_policy_rules
+            indexName: idx_rbac_policy_rules_policy_id
+            columns:
+              - column:
+                  name: policy_id
+
+        - insert:
+            tableName: rbac_policies
+            columns:
+              - column:
+                  name: id
+                  value: "00000000-0000-0000-0000-000000000100"
+              - column:
+                  name: policy_key
+                  value: gateway-default
+              - column:
+                  name: role_hierarchy
+                  value: "ROLE_SYSTEM_ADMIN > ROLE_USER"
+              - column:
+                  name: default_decision
+                  value: DENY
+              - column:
+                  name: version
+                  valueNumeric: 1
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000101" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 0 }
+              - column: { name: name, value: cors-preflight }
+              - column: { name: methods, value: OPTIONS }
+              - column: { name: path_pattern, value: "/**" }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: true }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000102" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 1 }
+              - column: { name: name, value: actuator-health }
+              - column: { name: methods, value: GET }
+              - column: { name: path_pattern, value: "/actuator/health/**" }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: true }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000103" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 2 }
+              - column: { name: name, value: openapi-docs }
+              - column: { name: methods, value: GET }
+              - column: { name: path_pattern, value: "/v3/api-docs/**" }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: true }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000104" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 3 }
+              - column: { name: name, value: swagger-ui }
+              - column: { name: methods, value: GET }
+              - column: { name: path_pattern, value: "/swagger-ui/**" }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: true }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000105" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 4 }
+              - column: { name: name, value: swagger-ui-index }
+              - column: { name: methods, value: GET }
+              - column: { name: path_pattern, value: /swagger-ui.html }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: true }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000106" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 5 }
+              - column: { name: name, value: auth-login }
+              - column: { name: methods, value: POST }
+              - column: { name: path_pattern, value: /auth/api/auth/login }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: true }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000107" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 6 }
+              - column: { name: name, value: auth-register }
+              - column: { name: methods, value: POST }
+              - column: { name: path_pattern, value: /auth/api/auth/register }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: true }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000108" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 7 }
+              - column: { name: name, value: auth-refresh }
+              - column: { name: methods, value: POST }
+              - column: { name: path_pattern, value: /auth/api/auth/refresh }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: true }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000109" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 8 }
+              - column: { name: name, value: user-admin }
+              - column: { name: methods, value: "*" }
+              - column: { name: path_pattern, value: /user/api/v1/admin/** }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: false }
+              - column: { name: required_roles, value: SYSTEM_ADMIN }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000110" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 9 }
+              - column: { name: name, value: auth-user }
+              - column: { name: methods, value: "*" }
+              - column: { name: path_pattern, value: /auth/** }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: false }
+              - column: { name: required_roles, value: USER }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000111" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 10 }
+              - column: { name: name, value: user-service }
+              - column: { name: methods, value: "*" }
+              - column: { name: path_pattern, value: /user/** }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: false }
+              - column: { name: required_roles, value: USER }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000112" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 11 }
+              - column: { name: name, value: subscription-service }
+              - column: { name: methods, value: "*" }
+              - column: { name: path_pattern, value: /subscription/** }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: false }
+              - column: { name: required_roles, value: USER }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000113" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 12 }
+              - column: { name: name, value: payment-service }
+              - column: { name: methods, value: "*" }
+              - column: { name: path_pattern, value: /payment/** }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: false }
+              - column: { name: required_roles, value: USER }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000114" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 13 }
+              - column: { name: name, value: charger-management-service }
+              - column: { name: methods, value: "*" }
+              - column: { name: path_pattern, value: /charger-management/** }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: false }
+              - column: { name: required_roles, value: USER }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000115" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 14 }
+              - column: { name: name, value: charger-admin-service }
+              - column: { name: methods, value: "*" }
+              - column: { name: path_pattern, value: /charger/api/v1/admin/** }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: false }
+              - column: { name: required_roles, value: SYSTEM_ADMIN }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000116" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 15 }
+              - column: { name: name, value: charger-service }
+              - column: { name: methods, value: "*" }
+              - column: { name: path_pattern, value: /charger/** }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: false }
+              - column: { name: required_roles, value: USER }
+
+        - insert:
+            tableName: rbac_policy_rules
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000117" }
+              - column: { name: policy_id, value: "00000000-0000-0000-0000-000000000100" }
+              - column: { name: sort_order, valueNumeric: 16 }
+              - column: { name: name, value: web-socket-connector }
+              - column: { name: methods, value: "*" }
+              - column: { name: path_pattern, value: /ws/** }
+              - column: { name: effect, value: ALLOW }
+              - column: { name: allow_anonymous, valueBoolean: false }
+              - column: { name: required_roles, value: USER }

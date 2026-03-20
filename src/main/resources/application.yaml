@@ -42,6 +42,11 @@ app:
     phone-number: ${APP_DEV_ADMIN_PHONE_NUMBER:+15550000001}
   dev-user:
     password: ${APP_DEV_USER_PASSWORD:User@12345}
+  rbac:
+    policy-key: ${APP_RBAC_POLICY_KEY:gateway-default}
+    internal-api-key: ${APP_RBAC_INTERNAL_API_KEY:dev-rbac-internal-key}
+    gateway-base-url: ${APP_RBAC_GATEWAY_BASE_URL:http://api-gateway:8090}
+    gateway-invalidate-path: ${APP_RBAC_GATEWAY_INVALIDATE_PATH:/internal/rbac/cache/invalidate}
 
 management:
   endpoints:
