@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0006-add-auth-countries-public-rbac-rule
+      author: codex
+      changes:
+        - sql:
+            splitStatements: false
+            stripComments: true
+            sql: |
+              INSERT INTO rbac_policy_rules (
+                  id,
+                  policy_id,
+                  sort_order,
+                  name,
+                  methods,
+                  path_pattern,
+                  effect,
+                  allow_anonymous,
+                  required_roles
+              )
+              SELECT
+                  '00000000-0000-0000-0000-000000000118',
+                  p.id,
+                  (SELECT COALESCE(MAX(r.sort_order), -1) + 1 FROM rbac_policy_rules r WHERE r.policy_id = p.id),
+                  'auth-countries',
+                  'GET',
+                  '/auth/api/countries/**',
+                  'ALLOW',
+                  true,
+                  NULL
+              FROM rbac_policies p
+              WHERE p.policy_key = 'gateway-default'
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM rbac_policy_rules r
+                  WHERE r.policy_id = p.id
+                    AND r.path_pattern = '/auth/api/countries/**'
+                    AND (r.methods = 'GET' OR r.methods = '*')
+                );
+
+        - sql:
+            splitStatements: false
+            stripComments: true
+            sql: |
+              UPDATE rbac_policies p
+              SET
+                  version = p.version + 1,
+                  updated_at = now()
+              WHERE p.policy_key = 'gateway-default'
+                AND EXISTS (
+                  SELECT 1
+                  FROM rbac_policy_rules r
+                  WHERE r.policy_id = p.id
+                    AND r.path_pattern = '/auth/api/countries/**'
+                    AND (r.methods = 'GET' OR r.methods = '*')
+                );
