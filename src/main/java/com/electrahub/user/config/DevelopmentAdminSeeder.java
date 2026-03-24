@@ -47,11 +47,28 @@ public class DevelopmentAdminSeeder implements ApplicationRunner {
     @Value("${app.dev-user.password:User@12345}")
     private String devUserPassword;
 
+    /**
+     * Executes development admin seeder for `DevelopmentAdminSeeder`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.config`.
+     * @param userRepository input consumed by DevelopmentAdminSeeder.
+     * @param roleRepository input consumed by DevelopmentAdminSeeder.
+     */
     public DevelopmentAdminSeeder(UserRepository userRepository, RoleRepository roleRepository) {
+        log.info("CODEx_ENTRY_LOG: Entering DevelopmentAdminSeeder#DevelopmentAdminSeeder");
+        log.debug("CODEx_ENTRY_LOG: Entering DevelopmentAdminSeeder#DevelopmentAdminSeeder with debug context");
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
     }
 
+    /**
+     * Executes run for `DevelopmentAdminSeeder`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.config`.
+     * @param args input consumed by run.
+     */
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
@@ -86,6 +103,17 @@ public class DevelopmentAdminSeeder implements ApplicationRunner {
         );
     }
 
+    /**
+     * Executes ensure user for `DevelopmentAdminSeeder`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.config`.
+     * @param seed input consumed by ensureUser.
+     * @param systemAdminRole input consumed by ensureUser.
+     * @param userRole input consumed by ensureUser.
+     * @param Map<String input consumed by ensureUser.
+     * @param domainRoles input consumed by ensureUser.
+     */
     private void ensureUser(DevUserSeed seed, Role systemAdminRole, Role userRole, Map<String, Role> domainRoles) {
         String normalizedEmail = seed.email().trim().toLowerCase();
         User user = userRepository.findByEmail(normalizedEmail)
@@ -121,11 +149,28 @@ public class DevelopmentAdminSeeder implements ApplicationRunner {
         );
     }
 
+    /**
+     * Retrieves load role for `DevelopmentAdminSeeder`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.config`.
+     * @param roleName input consumed by loadRole.
+     * @return result produced by loadRole.
+     */
     private Role loadRole(String roleName) {
         return roleRepository.findByName(roleName)
                 .orElseThrow(() -> new IllegalStateException("Role " + roleName + " not seeded"));
     }
 
+    /**
+     * Creates create user for `DevelopmentAdminSeeder`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.config`.
+     * @param normalizedEmail input consumed by createUser.
+     * @param rawPassword input consumed by createUser.
+     * @return result produced by createUser.
+     */
     private User createUser(String normalizedEmail, String rawPassword) {
         OffsetDateTime now = OffsetDateTime.now();
         return new User(

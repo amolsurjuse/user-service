@@ -1,5 +1,7 @@
 package com.electrahub.user.security;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,10 +19,21 @@ import java.util.UUID;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthFilter.class);
+
 
     private final JwtService jwtService;
 
+    /**
+     * Executes jwt auth filter for `JwtAuthFilter`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.security`.
+     * @param jwtService input consumed by JwtAuthFilter.
+     */
     public JwtAuthFilter(JwtService jwtService) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtAuthFilter#JwtAuthFilter");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtAuthFilter#JwtAuthFilter with debug context");
         this.jwtService = jwtService;
     }
 

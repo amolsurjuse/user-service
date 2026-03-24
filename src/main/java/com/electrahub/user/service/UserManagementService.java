@@ -1,5 +1,7 @@
 package com.electrahub.user.service;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.user.api.dto.AddressDto;
 import com.electrahub.user.api.dto.AdminResetPasswordRequest;
 import com.electrahub.user.api.dto.AdminUpdateUserRequest;
@@ -40,6 +42,8 @@ import java.util.UUID;
 
 @Service
 public class UserManagementService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserManagementService.class);
+
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -60,8 +64,18 @@ public class UserManagementService {
         this.paymentProvisioningClient = paymentProvisioningClient;
     }
 
+    /**
+     * Creates register for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param request input consumed by register.
+     * @return result produced by register.
+     */
     @Transactional
     public UserPrincipalResponse register(RegisterUserRequest request) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering UserManagementService#register");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserManagementService#register with debug context");
         String normalizedEmail = normalizeEmail(request.email());
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new ConflictException("Email already registered");
@@ -91,6 +105,14 @@ public class UserManagementService {
         return toPrincipal(user);
     }
 
+    /**
+     * Executes authenticate for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param request input consumed by authenticate.
+     * @return result produced by authenticate.
+     */
     @Transactional(readOnly = true)
     public UserPrincipalResponse authenticate(AuthenticateUserRequest request) {
         String normalizedEmail = normalizeEmail(request.email());
@@ -108,6 +130,14 @@ public class UserManagementService {
         return toPrincipal(user);
     }
 
+    /**
+     * Retrieves get principal for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by getPrincipal.
+     * @return result produced by getPrincipal.
+     */
     @Transactional(readOnly = true)
     public UserPrincipalResponse getPrincipal(UUID userId) {
         User user = userRepository.findById(userId)
@@ -115,6 +145,14 @@ public class UserManagementService {
         return toPrincipal(user);
     }
 
+    /**
+     * Retrieves get profile for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by getProfile.
+     * @return result produced by getProfile.
+     */
     @Transactional(readOnly = true)
     public UserProfileResponse getProfile(UUID userId) {
         requireSelfOrSystemAdmin(userId);
@@ -123,6 +161,15 @@ public class UserManagementService {
         return toProfile(user);
     }
 
+    /**
+     * Updates update profile for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by updateProfile.
+     * @param request input consumed by updateProfile.
+     * @return result produced by updateProfile.
+     */
     @Transactional
     public UserProfileResponse updateProfile(UUID userId, UpdateUserProfileRequest request) {
         requireSelfOrSystemAdmin(userId);
@@ -136,6 +183,16 @@ public class UserManagementService {
         return toProfile(user);
     }
 
+    /**
+     * Executes search for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param query input consumed by search.
+     * @param limit input consumed by search.
+     * @param offset input consumed by search.
+     * @return result produced by search.
+     */
     @Transactional(readOnly = true)
     public UserSearchResponse search(String query, int limit, int offset) {
         AuthenticatedUser actor = currentUser();
@@ -158,6 +215,14 @@ public class UserManagementService {
         return new UserSearchResponse(items, total, safeLimit, safeOffset, page, totalPages, pageResult.hasNext(), pageResult.hasPrevious());
     }
 
+    /**
+     * Executes count for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param query input consumed by count.
+     * @return result produced by count.
+     */
     @Transactional(readOnly = true)
     public UserCountResponse count(String query) {
         AuthenticatedUser actor = currentUser();
@@ -174,6 +239,13 @@ public class UserManagementService {
         return new UserCountResponse(normalizeQuery(query), count);
     }
 
+    /**
+     * Executes countries for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @return result produced by countries.
+     */
     @Transactional(readOnly = true)
     public List<CountryResponse> countries() {
         return countryRepository.findByEnabledTrueOrderByNameAsc().stream()
@@ -181,6 +253,16 @@ public class UserManagementService {
                 .toList();
     }
 
+    /**
+     * Executes search admin users for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param query input consumed by searchAdminUsers.
+     * @param limit input consumed by searchAdminUsers.
+     * @param offset input consumed by searchAdminUsers.
+     * @return result produced by searchAdminUsers.
+     */
     @Transactional(readOnly = true)
     public AdminUserSearchResponse searchAdminUsers(String query, int limit, int offset) {
         int safeLimit = Math.max(1, Math.min(limit, 200));
@@ -198,11 +280,28 @@ public class UserManagementService {
         return new AdminUserSearchResponse(items, total, safeLimit, safeOffset, page, totalPages, pageResult.hasNext(), pageResult.hasPrevious());
     }
 
+    /**
+     * Retrieves get admin user for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by getAdminUser.
+     * @return result produced by getAdminUser.
+     */
     @Transactional(readOnly = true)
     public AdminUserDetailResponse getAdminUser(UUID userId) {
         return toAdminDetail(loadUser(userId));
     }
 
+    /**
+     * Updates update admin user for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by updateAdminUser.
+     * @param request input consumed by updateAdminUser.
+     * @return result produced by updateAdminUser.
+     */
     @Transactional
     public AdminUserDetailResponse updateAdminUser(UUID userId, AdminUpdateUserRequest request) {
         AuthenticatedUser actor = currentUser();
@@ -220,12 +319,27 @@ public class UserManagementService {
         return toAdminDetail(user);
     }
 
+    /**
+     * Executes reset password for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by resetPassword.
+     * @param request input consumed by resetPassword.
+     */
     @Transactional
     public void resetPassword(UUID userId, AdminResetPasswordRequest request) {
         User user = loadUser(userId);
         user.setPasswordHash(passwordEncoder.encode(request.newPassword().trim()));
     }
 
+    /**
+     * Removes delete user for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by deleteUser.
+     */
     @Transactional
     public void deleteUser(UUID userId) {
         AuthenticatedUser actor = currentUser();
@@ -247,6 +361,14 @@ public class UserManagementService {
         }
     }
 
+    /**
+     * Creates build address for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param dto input consumed by buildAddress.
+     * @return result produced by buildAddress.
+     */
     private Address buildAddress(AddressDto dto) {
         if (dto == null) {
             return null;
@@ -264,6 +386,14 @@ public class UserManagementService {
         );
     }
 
+    /**
+     * Processes apply address for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param user input consumed by applyAddress.
+     * @param addressDto input consumed by applyAddress.
+     */
     private void applyAddress(User user, AddressDto addressDto) {
         Country country = resolveCountry(addressDto.countryIsoCode());
         if (user.getAddress() == null) {
@@ -288,18 +418,50 @@ public class UserManagementService {
         address.setCountry(country);
     }
 
+    /**
+     * Executes normalize email for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param email input consumed by normalizeEmail.
+     * @return result produced by normalizeEmail.
+     */
     private String normalizeEmail(String email) {
         return email == null ? "" : email.trim().toLowerCase();
     }
 
+    /**
+     * Executes normalize text for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param value input consumed by normalizeText.
+     * @return result produced by normalizeText.
+     */
     private String normalizeText(String value) {
         return value == null ? "" : value.trim();
     }
 
+    /**
+     * Executes normalize query for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param query input consumed by normalizeQuery.
+     * @return result produced by normalizeQuery.
+     */
     private String normalizeQuery(String query) {
         return query == null ? "" : query.trim();
     }
 
+    /**
+     * Executes resolve country for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param countryIsoCode input consumed by resolveCountry.
+     * @return result produced by resolveCountry.
+     */
     private Country resolveCountry(String countryIsoCode) {
         String code = normalizeText(countryIsoCode).toUpperCase();
         if (code.isBlank()) {
@@ -309,6 +471,14 @@ public class UserManagementService {
                 .orElseThrow(() -> new IllegalArgumentException("Country not available"));
     }
 
+    /**
+     * Executes resolve country code for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param user input consumed by resolveCountryCode.
+     * @return result produced by resolveCountryCode.
+     */
     private String resolveCountryCode(User user) {
         if (user.getAddress() == null || user.getAddress().getCountry() == null) {
             return "US";
@@ -316,6 +486,13 @@ public class UserManagementService {
         return user.getAddress().getCountry().getIsoCode();
     }
 
+    /**
+     * Executes current user for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @return result produced by currentUser.
+     */
     private AuthenticatedUser currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser user)) {
@@ -324,6 +501,13 @@ public class UserManagementService {
         return user;
     }
 
+    /**
+     * Executes require self or system admin for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by requireSelfOrSystemAdmin.
+     */
     private void requireSelfOrSystemAdmin(UUID userId) {
         AuthenticatedUser actor = currentUser();
         if (!actor.hasRole("SYSTEM_ADMIN") && !actor.userId().equals(userId)) {
@@ -331,11 +515,30 @@ public class UserManagementService {
         }
     }
 
+    /**
+     * Retrieves load user for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by loadUser.
+     * @return result produced by loadUser.
+     */
     private User loadUser(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + userId));
     }
 
+    /**
+     * Executes search current user for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param query input consumed by searchCurrentUser.
+     * @param limit input consumed by searchCurrentUser.
+     * @param offset input consumed by searchCurrentUser.
+     * @param userId input consumed by searchCurrentUser.
+     * @return result produced by searchCurrentUser.
+     */
     private UserSearchResponse searchCurrentUser(String query, int limit, int offset, UUID userId) {
         int safeLimit = Math.max(1, Math.min(limit, 200));
         int safeOffset = Math.max(0, offset);
@@ -350,6 +553,15 @@ public class UserManagementService {
         return new UserSearchResponse(items, total, safeLimit, safeOffset, currentPage, totalPages, hasNext, hasPrevious);
     }
 
+    /**
+     * Executes matches user search for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param user input consumed by matchesUserSearch.
+     * @param normalizedQuery input consumed by matchesUserSearch.
+     * @return result produced by matchesUserSearch.
+     */
     private boolean matchesUserSearch(User user, String normalizedQuery) {
         if (normalizedQuery.isBlank()) {
             return true;
@@ -361,10 +573,27 @@ public class UserManagementService {
                 || contains(user.getPhoneNumber(), query);
     }
 
+    /**
+     * Executes contains for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param source input consumed by contains.
+     * @param query input consumed by contains.
+     * @return result produced by contains.
+     */
     private boolean contains(String source, String query) {
         return source != null && source.toLowerCase().contains(query);
     }
 
+    /**
+     * Executes to principal for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param user input consumed by toPrincipal.
+     * @return result produced by toPrincipal.
+     */
     private UserPrincipalResponse toPrincipal(User user) {
         return new UserPrincipalResponse(
                 user.getId(),
@@ -374,6 +603,14 @@ public class UserManagementService {
         );
     }
 
+    /**
+     * Executes to summary for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param user input consumed by toSummary.
+     * @return result produced by toSummary.
+     */
     private UserSummaryResponse toSummary(User user) {
         return new UserSummaryResponse(
                 user.getId(),
@@ -386,6 +623,14 @@ public class UserManagementService {
         );
     }
 
+    /**
+     * Executes to admin summary for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param user input consumed by toAdminSummary.
+     * @return result produced by toAdminSummary.
+     */
     private AdminUserSummaryResponse toAdminSummary(User user) {
         return new AdminUserSummaryResponse(
                 user.getId(),
@@ -400,6 +645,14 @@ public class UserManagementService {
         );
     }
 
+    /**
+     * Executes to profile for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param user input consumed by toProfile.
+     * @return result produced by toProfile.
+     */
     private UserProfileResponse toProfile(User user) {
         String street = null;
         String city = null;
@@ -439,6 +692,14 @@ public class UserManagementService {
         );
     }
 
+    /**
+     * Executes to admin detail for `UserManagementService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param user input consumed by toAdminDetail.
+     * @return result produced by toAdminDetail.
+     */
     private AdminUserDetailResponse toAdminDetail(User user) {
         String street = null;
         String city = null;

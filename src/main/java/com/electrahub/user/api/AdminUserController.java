@@ -1,5 +1,7 @@
 package com.electrahub.user.api;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.user.api.dto.AdminResetPasswordRequest;
 import com.electrahub.user.api.dto.AdminUpdateUserRequest;
 import com.electrahub.user.api.dto.AdminUserDetailResponse;
@@ -29,10 +31,21 @@ import java.util.UUID;
 @PreAuthorize("hasRole('SYSTEM_ADMIN')")
 @RequestMapping("/api/v1/admin/users")
 public class AdminUserController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AdminUserController.class);
+
 
     private final UserManagementService userManagementService;
 
+    /**
+     * Executes admin user controller for `AdminUserController`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.api`.
+     * @param userManagementService input consumed by AdminUserController.
+     */
     public AdminUserController(UserManagementService userManagementService) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering AdminUserController#AdminUserController");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering AdminUserController#AdminUserController with debug context");
         this.userManagementService = userManagementService;
     }
 
@@ -45,6 +58,14 @@ public class AdminUserController {
         return userManagementService.searchAdminUsers(query, limit, offset);
     }
 
+    /**
+     * Executes detail for `AdminUserController`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.api`.
+     * @param userId input consumed by detail.
+     * @return result produced by detail.
+     */
     @GetMapping("/{userId}")
     public AdminUserDetailResponse detail(@PathVariable UUID userId) {
         return userManagementService.getAdminUser(userId);
@@ -67,6 +88,13 @@ public class AdminUserController {
         userManagementService.resetPassword(userId, request);
     }
 
+    /**
+     * Removes delete for `AdminUserController`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.api`.
+     * @param userId input consumed by delete.
+     */
     @DeleteMapping("/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID userId) {

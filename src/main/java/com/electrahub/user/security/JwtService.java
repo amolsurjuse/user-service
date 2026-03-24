@@ -1,5 +1,7 @@
 package com.electrahub.user.security;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -14,6 +16,8 @@ import java.util.List;
 
 @Service
 public class JwtService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtService.class);
+
 
     private final SecretKey signingKey;
     private final String issuer;
@@ -29,7 +33,17 @@ public class JwtService {
     public record ParsedToken(String subjectEmail, String uid, Date exp, List<String> roles) {
     }
 
+    /**
+     * Executes parse and validate for `JwtService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.security`.
+     * @param token input consumed by parseAndValidate.
+     * @return result produced by parseAndValidate.
+     */
     public ParsedToken parseAndValidate(String token) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtService#parseAndValidate");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtService#parseAndValidate with debug context");
         Claims claims = Jwts.parser()
                 .verifyWith(signingKey)
                 .build()
@@ -56,6 +70,14 @@ public class JwtService {
         );
     }
 
+    /**
+     * Executes is not expired for `JwtService`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.security`.
+     * @param exp input consumed by isNotExpired.
+     * @return result produced by isNotExpired.
+     */
     public boolean isNotExpired(Date exp) {
         return exp != null && exp.after(new Date());
     }

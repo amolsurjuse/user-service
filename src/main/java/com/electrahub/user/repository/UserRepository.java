@@ -11,8 +11,24 @@ import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
 
+    /**
+     * Retrieves find by email for `UserRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.repository`.
+     * @param email input consumed by findByEmail.
+     * @return result produced by findByEmail.
+     */
     Optional<User> findByEmail(String email);
 
+    /**
+     * Executes exists by email for `UserRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.repository`.
+     * @param email input consumed by existsByEmail.
+     * @return result produced by existsByEmail.
+     */
     boolean existsByEmail(String email);
 
     @Query("""
@@ -24,6 +40,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    or lower(coalesce(u.phoneNumber, '')) like lower(concat('%', :query, '%')))
             order by u.createdAt desc
             """)
+    /**
+     * Executes search for `UserRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.repository`.
+     * @param query input consumed by search.
+     * @param pageable input consumed by search.
+     * @return result produced by search.
+     */
     Page<User> search(String query, Pageable pageable);
 
     @Query("""
@@ -41,6 +66,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
               )
             order by u.createdAt desc
             """)
+    /**
+     * Executes search regular users for `UserRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.repository`.
+     * @param query input consumed by searchRegularUsers.
+     * @param pageable input consumed by searchRegularUsers.
+     * @return result produced by searchRegularUsers.
+     */
     Page<User> searchRegularUsers(String query, Pageable pageable);
 
     @Query("""
@@ -54,6 +88,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    or lower(coalesce(u.phoneNumber, '')) like lower(concat('%', :query, '%')))
             order by u.createdAt desc
             """)
+    /**
+     * Executes search system admins for `UserRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.repository`.
+     * @param query input consumed by searchSystemAdmins.
+     * @param pageable input consumed by searchSystemAdmins.
+     * @return result produced by searchSystemAdmins.
+     */
     Page<User> searchSystemAdmins(String query, Pageable pageable);
 
     @Query("""
@@ -64,6 +107,14 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    or lower(coalesce(u.lastName, '')) like lower(concat('%', :query, '%'))
                    or lower(coalesce(u.phoneNumber, '')) like lower(concat('%', :query, '%')))
             """)
+    /**
+     * Executes count search for `UserRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.repository`.
+     * @param query input consumed by countSearch.
+     * @return result produced by countSearch.
+     */
     long countSearch(String query);
 
     @Query("""
@@ -80,6 +131,14 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    where adminRole.name = 'SYSTEM_ADMIN'
               )
             """)
+    /**
+     * Executes count search regular users for `UserRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.repository`.
+     * @param query input consumed by countSearchRegularUsers.
+     * @return result produced by countSearchRegularUsers.
+     */
     long countSearchRegularUsers(String query);
 
     @Query("""
@@ -92,5 +151,13 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    or lower(coalesce(u.lastName, '')) like lower(concat('%', :query, '%'))
                    or lower(coalesce(u.phoneNumber, '')) like lower(concat('%', :query, '%')))
             """)
+    /**
+     * Executes count search system admins for `UserRepository`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.repository`.
+     * @param query input consumed by countSearchSystemAdmins.
+     * @return result produced by countSearchSystemAdmins.
+     */
     long countSearchSystemAdmins(String query);
 }

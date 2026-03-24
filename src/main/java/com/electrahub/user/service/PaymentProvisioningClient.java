@@ -16,12 +16,30 @@ public class PaymentProvisioningClient {
 
     private final RestClient restClient;
 
+    /**
+     * Executes value for `PaymentProvisioningClient`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param paymentBaseUrl input consumed by Value.
+     * @return result produced by Value.
+     */
     public PaymentProvisioningClient(@Value("${app.payment-service.base-url}") String paymentBaseUrl) {
+        log.info("CODEx_ENTRY_LOG: Entering PaymentProvisioningClient#Value");
+        log.debug("CODEx_ENTRY_LOG: Entering PaymentProvisioningClient#Value with debug context");
         this.restClient = RestClient.builder()
                 .baseUrl(paymentBaseUrl)
                 .build();
     }
 
+    /**
+     * Creates create wallet for `PaymentProvisioningClient`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param accountId input consumed by createWallet.
+     * @param countryCode input consumed by createWallet.
+     */
     public void createWallet(String accountId, String countryCode) {
         WalletCreateRequest payload = new WalletCreateRequest(accountId, BigDecimal.ZERO, null, null, countryCode);
 

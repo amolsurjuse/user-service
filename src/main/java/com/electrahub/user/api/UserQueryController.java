@@ -1,5 +1,7 @@
 package com.electrahub.user.api;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.user.api.dto.UserCountResponse;
 import com.electrahub.user.api.dto.UserPrincipalResponse;
 import com.electrahub.user.api.dto.UserProfileResponse;
@@ -24,18 +26,45 @@ import java.util.UUID;
 @Validated
 @RequestMapping("/api/v1/users")
 public class UserQueryController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserQueryController.class);
+
 
     private final UserManagementService userManagementService;
 
+    /**
+     * Executes user query controller for `UserQueryController`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.api`.
+     * @param userManagementService input consumed by UserQueryController.
+     */
     public UserQueryController(UserManagementService userManagementService) {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering UserQueryController#UserQueryController");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserQueryController#UserQueryController with debug context");
         this.userManagementService = userManagementService;
     }
 
+    /**
+     * Executes principal for `UserQueryController`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.api`.
+     * @param userId input consumed by principal.
+     * @return result produced by principal.
+     */
     @GetMapping("/{userId}/principal")
     public UserPrincipalResponse principal(@PathVariable UUID userId) {
         return userManagementService.getPrincipal(userId);
     }
 
+    /**
+     * Executes profile for `UserQueryController`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.api`.
+     * @param userId input consumed by profile.
+     * @return result produced by profile.
+     */
     @GetMapping("/{userId}/profile")
     public UserProfileResponse profile(@PathVariable UUID userId) {
         return userManagementService.getProfile(userId);
@@ -56,6 +85,14 @@ public class UserQueryController {
         return userManagementService.search(query, limit, offset);
     }
 
+    /**
+     * Executes request param for `UserQueryController`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.api`.
+     * @param query input consumed by RequestParam.
+     * @return result produced by RequestParam.
+     */
     @GetMapping("/search/count")
     public UserCountResponse count(@RequestParam(required = false) String query) {
         return userManagementService.count(query);

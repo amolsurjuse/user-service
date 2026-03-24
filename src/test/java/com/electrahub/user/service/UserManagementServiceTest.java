@@ -1,5 +1,7 @@
 package com.electrahub.user.service;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.electrahub.user.api.dto.UserCountResponse;
 import com.electrahub.user.api.dto.UserSearchResponse;
 import com.electrahub.user.domain.Role;
@@ -31,6 +33,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserManagementServiceTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserManagementServiceTest.class);
+
 
     @Mock
     private UserRepository userRepository;
@@ -50,11 +54,25 @@ class UserManagementServiceTest {
     @InjectMocks
     private UserManagementService userManagementService;
 
+    /**
+     * Removes clear security context for `UserManagementServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     */
     @AfterEach
     void clearSecurityContext() {
+        LOGGER.info("CODEx_ENTRY_LOG: Entering UserManagementServiceTest#clearSecurityContext");
+        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserManagementServiceTest#clearSecurityContext with debug context");
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Executes search returns regular users for system admin for `UserManagementServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     */
     @Test
     void searchReturnsRegularUsersForSystemAdmin() {
         setCurrentUser(UUID.randomUUID(), "sysadmin.dev@electrahub.com", "SYSTEM_ADMIN", "USER");
@@ -74,6 +92,12 @@ class UserManagementServiceTest {
         verify(userRepository, never()).searchSystemAdmins("", PageRequest.of(0, 10));
     }
 
+    /**
+     * Executes search admin users returns system admins only for `UserManagementServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     */
     @Test
     void searchAdminUsersReturnsSystemAdminsOnly() {
         User adminUser = createUser("network.operator.dev@electrahub.com", "SYSTEM_ADMIN", "USER");
@@ -92,6 +116,12 @@ class UserManagementServiceTest {
         verify(userRepository).countSearchSystemAdmins("network");
     }
 
+    /**
+     * Executes count returns regular user count for system admin for `UserManagementServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     */
     @Test
     void countReturnsRegularUserCountForSystemAdmin() {
         setCurrentUser(UUID.randomUUID(), "sysadmin.dev@electrahub.com", "SYSTEM_ADMIN", "USER");
@@ -103,6 +133,12 @@ class UserManagementServiceTest {
         verify(userRepository).countSearchRegularUsers("driver");
     }
 
+    /**
+     * Executes search returns current user for plain user for `UserManagementServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     */
     @Test
     void searchReturnsCurrentUserForPlainUser() {
         UUID userId = UUID.randomUUID();
@@ -119,16 +155,44 @@ class UserManagementServiceTest {
         verify(userRepository, never()).searchSystemAdmins("driver", PageRequest.of(0, 10));
     }
 
+    /**
+     * Updates set current user for `UserManagementServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by setCurrentUser.
+     * @param email input consumed by setCurrentUser.
+     * @param roles input consumed by setCurrentUser.
+     */
     private void setCurrentUser(UUID userId, String email, String... roles) {
         AuthenticatedUser authenticatedUser = new AuthenticatedUser(userId, email, List.of(roles));
         var authentication = new UsernamePasswordAuthenticationToken(authenticatedUser, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
+    /**
+     * Creates create user for `UserManagementServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param email input consumed by createUser.
+     * @param roles input consumed by createUser.
+     * @return result produced by createUser.
+     */
     private User createUser(String email, String... roles) {
         return createUser(UUID.randomUUID(), email, roles);
     }
 
+    /**
+     * Creates create user for `UserManagementServiceTest`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param userId input consumed by createUser.
+     * @param email input consumed by createUser.
+     * @param roles input consumed by createUser.
+     * @return result produced by createUser.
+     */
     private User createUser(UUID userId, String email, String... roles) {
         User user = new User(userId, email, "hash", true, OffsetDateTime.now());
         user.setFirstName("Test");

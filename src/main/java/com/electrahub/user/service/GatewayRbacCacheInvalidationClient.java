@@ -17,13 +17,28 @@ public class GatewayRbacCacheInvalidationClient {
     private final RestClient restClient;
     private final RbacSyncProperties rbacSyncProperties;
 
+    /**
+     * Executes gateway rbac cache invalidation client for `GatewayRbacCacheInvalidationClient`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     * @param rbacSyncProperties input consumed by GatewayRbacCacheInvalidationClient.
+     */
     public GatewayRbacCacheInvalidationClient(RbacSyncProperties rbacSyncProperties) {
+        log.info("CODEx_ENTRY_LOG: Entering GatewayRbacCacheInvalidationClient#GatewayRbacCacheInvalidationClient");
+        log.debug("CODEx_ENTRY_LOG: Entering GatewayRbacCacheInvalidationClient#GatewayRbacCacheInvalidationClient with debug context");
         this.rbacSyncProperties = rbacSyncProperties;
         this.restClient = RestClient.builder()
                 .baseUrl(rbacSyncProperties.getGatewayBaseUrl())
                 .build();
     }
 
+    /**
+     * Executes invalidate for `GatewayRbacCacheInvalidationClient`.
+     *
+     * <p>Detailed behavior: follows the current implementation path and
+     * enforces component-specific rules in `com.electrahub.user.service`.
+     */
     public void invalidate() {
         try {
             restClient.post()
