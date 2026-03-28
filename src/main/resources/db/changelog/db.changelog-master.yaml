@@ -15,3 +15,7 @@ databaseChangeLog:
       file: db/changelog/changes/0006-add-auth-countries-public-rbac-rule.yaml
   - include:
       file: db/changelog/changes/0007-add-pricing-rbac-rules.yaml
+  - include:
+      file: db/changelog/changes/0008-add-charger-public-rbac-rules.yaml
+  - include:
+      file: db/changelog/changes/0009-create-terms-of-service.yaml

@@ -1,0 +1,208 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0009-create-terms-of-service
+      author: codex
+      changes:
+        - createTable:
+            tableName: terms_version
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: version
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: title
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content_url
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: summary
+                  type: text
+              - column:
+                  name: effective_date
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enforcement_mode
+                  type: varchar(20)
+                  defaultValue: HARD
+                  constraints:
+                    nullable: false
+              - column:
+                  name: min_app_version_ios
+                  type: varchar(20)
+              - column:
+                  name: min_app_version_android
+                  type: varchar(20)
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: metadata
+                  type: jsonb
+                  defaultValue: '{}'
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: terms_acceptance
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: terms_version_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+              - column:
+                  name: device_id
+                  type: varchar(255)
+              - column:
+                  name: device_platform
+                  type: varchar(20)
+              - column:
+                  name: device_model
+                  type: varchar(100)
+              - column:
+                  name: app_version
+                  type: varchar(20)
+              - column:
+                  name: ip_address
+                  type: inet
+              - column:
+                  name: accepted_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: linked_at
+                  type: timestamptz
+              - column:
+                  name: metadata
+                  type: jsonb
+                  defaultValue: '{}'
+
+        - createTable:
+            tableName: terms_device_link
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: device_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: device_platform
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: linked_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+
+        - addForeignKeyConstraint:
+            baseTableName: terms_acceptance
+            baseColumnNames: terms_version_id
+            referencedTableName: terms_version
+            referencedColumnNames: id
+            constraintName: fk_acceptance_terms_version
+            onDelete: cascade
+
+        - addForeignKeyConstraint:
+            baseTableName: terms_acceptance
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_acceptance_user
+            onDelete: cascade
+
+        - addForeignKeyConstraint:
+            baseTableName: terms_device_link
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_device_link_user
+            onDelete: cascade
+
+        - createIndex:
+            tableName: terms_acceptance
+            indexName: idx_acceptance_user_version
+            unique: true
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: terms_version_id
+            where: user_id IS NOT NULL
+
+        - createIndex:
+            tableName: terms_acceptance
+            indexName: idx_acceptance_device
+            columns:
+              - column:
+                  name: device_id
+              - column:
+                  name: terms_version_id
+            where: device_id IS NOT NULL
+
+        - createIndex:
+            tableName: terms_acceptance
+            indexName: idx_acceptance_version
+            columns:
+              - column:
+                  name: terms_version_id
+
+        - createIndex:
+            tableName: terms_device_link
+            indexName: idx_device_link_device_user
+            unique: true
+            columns:
+              - column:
+                  name: device_id
+              - column:
+                  name: user_id
