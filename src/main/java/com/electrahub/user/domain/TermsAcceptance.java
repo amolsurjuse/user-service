@@ -2,6 +2,8 @@ package com.electrahub.user.domain;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -50,6 +52,7 @@ public class TermsAcceptance {
     @Column(name = "linked_at")
     private OffsetDateTime linkedAt;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> metadata;
 
