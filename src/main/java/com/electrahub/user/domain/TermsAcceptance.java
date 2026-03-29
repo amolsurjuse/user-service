@@ -43,7 +43,7 @@ public class TermsAcceptance {
     @Column(name = "app_version", length = 20)
     private String appVersion;
 
-    @Column(name = "ip_address")
+    @Column(name = "ip_address", columnDefinition = "inet")
     private String ipAddress;
 
     @Column(name = "accepted_at", nullable = false)
