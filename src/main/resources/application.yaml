@@ -29,6 +29,8 @@ app:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:4200,http://localhost:4201,http://localhost:4211,http://localhost:8080,https://dev.electrahub.com,https://dev.electrahub.com:8443,http://driver-portal-dev.electrahub.com:8080,https://driver-portal-dev.electrahub.com:8443}
   payment-service:
     base-url: ${APP_PAYMENT_SERVICE_BASE_URL:http://payment-service:8083}
+  session-service:
+    base-url: ${APP_SESSION_SERVICE_BASE_URL:http://session-service:8083}
   security:
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER:auth-service}
@@ -62,3 +64,9 @@ logging:
   level:
     root: INFO
     com.electrahub.user: INFO
+
+grpc:
+  server:
+    port: ${GRPC_SERVER_PORT:9082}
+    reflection-service-enabled: ${GRPC_REFLECTION_ENABLED:true}
+    health-service-enabled: true

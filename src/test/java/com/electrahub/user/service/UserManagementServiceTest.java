@@ -2,6 +2,8 @@ package com.electrahub.user.service;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import com.electrahub.user.api.dto.AccountDeletionDecision;
+import com.electrahub.user.api.dto.AccountDeletionResponse;
 import com.electrahub.user.api.dto.UserCountResponse;
 import com.electrahub.user.api.dto.UserSearchResponse;
 import com.electrahub.user.domain.Role;
@@ -22,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +53,12 @@ class UserManagementServiceTest {
 
     @Mock
     private PaymentProvisioningClient paymentProvisioningClient;
+
+    @Mock
+    private PaymentAccountStateClient paymentAccountStateClient;
+
+    @Mock
+    private SessionActivityClient sessionActivityClient;
 
     @InjectMocks
     private UserManagementService userManagementService;
@@ -153,6 +162,85 @@ class UserManagementServiceTest {
         assertThat(response.items().getFirst().email()).isEqualTo("driver.user.dev@electrahub.com");
         verify(userRepository, never()).searchRegularUsers("driver", PageRequest.of(0, 10));
         verify(userRepository, never()).searchSystemAdmins("driver", PageRequest.of(0, 10));
+    }
+
+    @Test
+    void requestAccountDeletionBlocksWhenActiveSessionExists() {
+        UUID userId = UUID.randomUUID();
+        User currentUser = createUser(userId, "driver.user.dev@electrahub.com", "USER");
+        setCurrentUser(userId, "driver.user.dev@electrahub.com", "USER");
+
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(currentUser));
+        when(sessionActivityClient.hasActiveChargingSession(userId.toString())).thenReturn(true);
+        when(paymentAccountStateClient.walletBalance(userId.toString())).thenReturn(new BigDecimal("17.25"));
+
+        AccountDeletionResponse response = userManagementService.requestAccountDeletion(userId, false);
+
+        assertThat(response.decision()).isEqualTo(AccountDeletionDecision.ACTIVE_SESSION_IN_PROGRESS);
+        assertThat(response.activeCharging()).isTrue();
+        assertThat(response.deleted()).isFalse();
+        assertThat(currentUser.isPendingDeletion()).isFalse();
+        verify(userRepository, never()).save(currentUser);
+        verify(userRepository, never()).delete(currentUser);
+    }
+
+    @Test
+    void requestAccountDeletionMarksPendingWhenWalletBalanceExists() {
+        UUID userId = UUID.randomUUID();
+        User currentUser = createUser(userId, "driver.user.dev@electrahub.com", "USER");
+        setCurrentUser(userId, "driver.user.dev@electrahub.com", "USER");
+
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(currentUser));
+        when(sessionActivityClient.hasActiveChargingSession(userId.toString())).thenReturn(false);
+        when(paymentAccountStateClient.walletBalance(userId.toString())).thenReturn(new BigDecimal("5.00"));
+        when(userRepository.save(currentUser)).thenReturn(currentUser);
+
+        AccountDeletionResponse response = userManagementService.requestAccountDeletion(userId, false);
+
+        assertThat(response.decision()).isEqualTo(AccountDeletionDecision.ACCOUNT_MARKED_PENDING_DELETION);
+        assertThat(response.pendingDeletion()).isTrue();
+        assertThat(currentUser.isPendingDeletion()).isTrue();
+        assertThat(currentUser.getDeletionRequestedAt()).isNotNull();
+        assertThat(currentUser.isEnabled()).isFalse();
+        verify(userRepository).save(currentUser);
+    }
+
+    @Test
+    void requestAccountDeletionRequiresConfirmationWhenNoBalanceAndNoSession() {
+        UUID userId = UUID.randomUUID();
+        User currentUser = createUser(userId, "driver.user.dev@electrahub.com", "USER");
+        setCurrentUser(userId, "driver.user.dev@electrahub.com", "USER");
+
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(currentUser));
+        when(sessionActivityClient.hasActiveChargingSession(userId.toString())).thenReturn(false);
+        when(paymentAccountStateClient.walletBalance(userId.toString())).thenReturn(BigDecimal.ZERO);
+
+        AccountDeletionResponse response = userManagementService.requestAccountDeletion(userId, false);
+
+        assertThat(response.decision()).isEqualTo(AccountDeletionDecision.CONFIRM_DIRECT_DELETION);
+        assertThat(response.directDeletionEligible()).isTrue();
+        assertThat(response.deleted()).isFalse();
+        verify(userRepository, never()).saveAndFlush(currentUser);
+        verify(userRepository, never()).delete(currentUser);
+    }
+
+    @Test
+    void requestAccountDeletionHardDeletesWhenConfirmedAndNoBalanceAndNoSession() {
+        UUID userId = UUID.randomUUID();
+        User currentUser = createUser(userId, "driver.user.dev@electrahub.com", "USER");
+        setCurrentUser(userId, "driver.user.dev@electrahub.com", "USER");
+
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(currentUser));
+        when(sessionActivityClient.hasActiveChargingSession(userId.toString())).thenReturn(false);
+        when(paymentAccountStateClient.walletBalance(userId.toString())).thenReturn(BigDecimal.ZERO);
+
+        AccountDeletionResponse response = userManagementService.requestAccountDeletion(userId, true);
+
+        assertThat(response.decision()).isEqualTo(AccountDeletionDecision.ACCOUNT_DELETED);
+        assertThat(response.deleted()).isTrue();
+        verify(userRepository).saveAndFlush(currentUser);
+        verify(userRepository).delete(currentUser);
+        verify(userRepository).flush();
     }
 
     /**

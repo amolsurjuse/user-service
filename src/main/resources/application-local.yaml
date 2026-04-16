@@ -24,6 +24,8 @@ spring:
 app:
   payment-service:
     base-url: ${LOCAL_APP_PAYMENT_SERVICE_BASE_URL:http://127.0.0.1:8083}
+  session-service:
+    base-url: ${LOCAL_APP_SESSION_SERVICE_BASE_URL:http://127.0.0.1:8084}
   dev-admin:
     enabled: ${LOCAL_APP_DEV_ADMIN_ENABLED:true}
 

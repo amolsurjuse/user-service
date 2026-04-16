@@ -10,6 +10,8 @@ public record UserSummaryResponse(
         String lastName,
         String phoneNumber,
         boolean enabled,
+        boolean pendingDeletion,
+        OffsetDateTime deletionRequestedAt,
         OffsetDateTime createdAt
 ) {
 }
