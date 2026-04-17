@@ -491,6 +491,7 @@ public class UserManagementService {
      * @param addressDto input consumed by applyAddress.
      */
     private void applyAddress(User user, AddressDto addressDto) {
+        if (addressDto == null) return;
         Country country = resolveCountry(addressDto.countryIsoCode());
         if (user.getAddress() == null) {
             Address address = new Address(
