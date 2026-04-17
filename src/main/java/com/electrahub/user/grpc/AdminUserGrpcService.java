@@ -12,8 +12,6 @@ import com.electrahub.proto.user.v1.AdminUserSearchResponse;
 import com.electrahub.proto.user.v1.AdminUserDetailResponse;
 import com.electrahub.proto.user.v1.AdminUserSummary;
 import com.electrahub.user.api.dto.AddressDto;
-import com.electrahub.user.api.dto.AdminUpdateUserRequest;
-import com.electrahub.user.api.dto.AdminResetPasswordRequest;
 import com.electrahub.user.api.error.NotFoundException;
 import com.electrahub.user.service.UserManagementService;
 import io.grpc.Status;
