@@ -1,0 +1,214 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0009-create-terms-versions
+      author: codex
+      changes:
+        - createTable:
+            tableName: terms_versions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: version_number
+                  type: integer
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: version_label
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content_url
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content_sha256
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requires_re_acceptance
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: effective_date
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: published_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: terms_versions
+            baseColumnNames: published_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_terms_versions_published_by
+
+        - createIndex:
+            tableName: terms_versions
+            indexName: idx_terms_versions_active
+            columns:
+              - column:
+                  name: is_active
+
+        - createIndex:
+            tableName: terms_versions
+            indexName: idx_terms_versions_effective_date
+            columns:
+              - column:
+                  name: effective_date
+
+        - sql:
+            dbms: postgresql
+            sql: CREATE UNIQUE INDEX ux_terms_versions_single_active ON user_mgmt.terms_versions (is_active) WHERE is_active = true;
+
+  - changeSet:
+      id: 0009-create-terms-acceptances
+      author: codex
+      changes:
+        - createTable:
+            tableName: terms_acceptances
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: terms_version_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: accepted_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: device_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: device_model
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: os_version
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: app_version
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: platform
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ip_address
+                  type: varchar(45)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_agent
+                  type: text
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: terms_acceptances
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_terms_acceptances_user
+
+        - addForeignKeyConstraint:
+            baseTableName: terms_acceptances
+            baseColumnNames: terms_version_id
+            referencedTableName: terms_versions
+            referencedColumnNames: id
+            constraintName: fk_terms_acceptances_version
+
+        - addUniqueConstraint:
+            tableName: terms_acceptances
+            columnNames: user_id, terms_version_id
+            constraintName: ux_terms_acceptances_user_version
+
+        - createIndex:
+            tableName: terms_acceptances
+            indexName: idx_terms_acceptances_user_version
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: terms_version_id
+
+        - createIndex:
+            tableName: terms_acceptances
+            indexName: idx_terms_acceptances_version
+            columns:
+              - column:
+                  name: terms_version_id
+
+        - createIndex:
+            tableName: terms_acceptances
+            indexName: idx_terms_acceptances_accepted_at
+            columns:
+              - column:
+                  name: accepted_at
+
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              CREATE OR REPLACE FUNCTION user_mgmt.prevent_terms_acceptance_mutation()
+              RETURNS trigger AS $$
+              BEGIN
+                RAISE EXCEPTION 'terms_acceptances is append-only';
+              END;
+              $$ LANGUAGE plpgsql;
+
+              CREATE TRIGGER trg_terms_acceptances_no_update
+              BEFORE UPDATE ON user_mgmt.terms_acceptances
+              FOR EACH ROW EXECUTE FUNCTION user_mgmt.prevent_terms_acceptance_mutation();
+
+              CREATE TRIGGER trg_terms_acceptances_no_delete
+              BEFORE DELETE ON user_mgmt.terms_acceptances
+              FOR EACH ROW EXECUTE FUNCTION user_mgmt.prevent_terms_acceptance_mutation();
