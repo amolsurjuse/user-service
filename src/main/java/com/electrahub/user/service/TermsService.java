@@ -1,0 +1,258 @@
+package com.electrahub.user.service;
+
+import com.electrahub.user.api.dto.TermsDtos;
+import com.electrahub.user.api.error.NotFoundException;
+import com.electrahub.user.domain.TermsAcceptance;
+import com.electrahub.user.domain.TermsVersion;
+import com.electrahub.user.repository.TermsAcceptanceRepository;
+import com.electrahub.user.repository.TermsVersionRepository;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+
+@Service
+public class TermsService {
+
+    private final TermsVersionRepository termsVersionRepository;
+    private final TermsAcceptanceRepository termsAcceptanceRepository;
+
+    public TermsService(
+            TermsVersionRepository termsVersionRepository,
+            TermsAcceptanceRepository termsAcceptanceRepository
+    ) {
+        this.termsVersionRepository = termsVersionRepository;
+        this.termsAcceptanceRepository = termsAcceptanceRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public TermsDtos.TermsVersionResponse currentTerms() {
+        return toVersionResponse(activeVersion());
+    }
+
+    @Transactional(readOnly = true)
+    public TermsDtos.TermsStatusResponse status(UUID userId) {
+        TermsVersion active = activeVersion();
+        Integer acceptedVersion = latestAcceptedVersionNumber(userId);
+        boolean accepted = isAccepted(userId, active);
+        return new TermsDtos.TermsStatusResponse(accepted, active.getVersionNumber(), acceptedVersion);
+    }
+
+    @Transactional(readOnly = true)
+    public TermsDtos.TermsGateStatusResponse gateStatus(UUID userId) {
+        TermsVersion active = activeVersion();
+        Integer acceptedVersion = latestAcceptedVersionNumber(userId);
+        boolean accepted = isAccepted(userId, active);
+        return new TermsDtos.TermsGateStatusResponse(
+                accepted,
+                active.getVersionNumber(),
+                acceptedVersion,
+                active.getVersionLabel(),
+                active.getContentUrl(),
+                active.getContentSha256()
+        );
+    }
+
+    @Transactional
+    public TermsDtos.TermsAcceptResponse acceptCurrent(
+            UUID userId,
+            TermsDtos.TermsAcceptRequest request,
+            String ipAddress,
+            String userAgent
+    ) {
+        TermsVersion active = activeVersion();
+        return termsAcceptanceRepository.findByUserIdAndTermsVersionId(userId, active.getId())
+                .map(existing -> new TermsDtos.TermsAcceptResponse(
+                        existing.getId(),
+                        existing.getAcceptedAt(),
+                        existing.getTermsVersion().getVersionNumber()
+                ))
+                .orElseGet(() -> createAcceptance(userId, active, request, ipAddress, userAgent));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TermsDtos.TermsAcceptanceResponse> history(UUID userId) {
+        return termsAcceptanceRepository.findByUserIdOrderByAcceptedAtDesc(userId)
+                .stream()
+                .map(this::toAcceptanceResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TermsDtos.AdminTermsVersionResponse> listVersions() {
+        return termsVersionRepository.findAll().stream()
+                .sorted((left, right) -> Integer.compare(right.getVersionNumber(), left.getVersionNumber()))
+                .map(this::toAdminVersionResponse)
+                .toList();
+    }
+
+    @Transactional
+    public TermsDtos.AdminTermsVersionResponse publish(UUID adminUserId, TermsDtos.PublishTermsVersionRequest request) {
+        int nextVersionNumber = termsVersionRepository.findTopByOrderByVersionNumberDesc()
+                .map(TermsVersion::getVersionNumber)
+                .orElse(0) + 1;
+        OffsetDateTime now = OffsetDateTime.now();
+        TermsVersion version = new TermsVersion(
+                UUID.randomUUID(),
+                nextVersionNumber,
+                request.versionLabel().trim(),
+                request.contentUrl().trim(),
+                request.contentSha256().trim().toLowerCase(Locale.ROOT),
+                request.requiresReAcceptance(),
+                request.effectiveDate() == null ? now : request.effectiveDate(),
+                adminUserId,
+                now
+        );
+        TermsVersion saved = termsVersionRepository.save(version);
+        return toAdminVersionResponse(saved);
+    }
+
+    @Transactional
+    public TermsDtos.AdminTermsVersionResponse activate(UUID termsVersionId) {
+        TermsVersion target = termsVersionRepository.findById(termsVersionId)
+                .orElseThrow(() -> new NotFoundException("Terms version not found: " + termsVersionId));
+        termsVersionRepository.findActiveForUpdate().ifPresent(TermsVersion::deactivate);
+        target.activate();
+        return toAdminVersionResponse(termsVersionRepository.save(target));
+    }
+
+    @Transactional(readOnly = true)
+    public TermsDtos.TermsAcceptancePageResponse acceptances(
+            UUID termsVersionId,
+            UUID userId,
+            String deviceId,
+            OffsetDateTime from,
+            OffsetDateTime to,
+            int page,
+            int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        var result = termsAcceptanceRepository.searchAcceptances(termsVersionId, userId, deviceId, from, to, pageable);
+        List<TermsDtos.TermsAcceptanceResponse> items = result.getContent().stream()
+                .map(this::toAcceptanceResponse)
+                .toList();
+        return new TermsDtos.TermsAcceptancePageResponse(
+                items,
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages()
+        );
+    }
+
+    @Transactional
+    public void activateDueVersions() {
+        OffsetDateTime now = OffsetDateTime.now();
+        List<TermsVersion> dueVersions = termsVersionRepository
+                .findByEffectiveDateLessThanEqualAndActiveFalseOrderByEffectiveDateAsc(now);
+        for (TermsVersion dueVersion : dueVersions) {
+            termsVersionRepository.findActiveForUpdate().ifPresent(TermsVersion::deactivate);
+            dueVersion.activate();
+        }
+    }
+
+    private TermsDtos.TermsAcceptResponse createAcceptance(
+            UUID userId,
+            TermsVersion active,
+            TermsDtos.TermsAcceptRequest request,
+            String ipAddress,
+            String userAgent
+    ) {
+        TermsAcceptance acceptance = new TermsAcceptance(
+                UUID.randomUUID(),
+                userId,
+                active,
+                OffsetDateTime.now(),
+                request.deviceId().trim(),
+                request.deviceModel().trim(),
+                request.osVersion().trim(),
+                request.appVersion().trim(),
+                request.platform().trim(),
+                ipAddress,
+                userAgent == null ? "" : userAgent
+        );
+        TermsAcceptance saved;
+        try {
+            saved = termsAcceptanceRepository.saveAndFlush(acceptance);
+        } catch (DataIntegrityViolationException ex) {
+            saved = termsAcceptanceRepository.findByUserIdAndTermsVersionId(userId, active.getId())
+                    .orElseThrow(() -> ex);
+        }
+        return new TermsDtos.TermsAcceptResponse(
+                saved.getId(),
+                saved.getAcceptedAt(),
+                saved.getTermsVersion().getVersionNumber()
+        );
+    }
+
+    private TermsVersion activeVersion() {
+        return termsVersionRepository.findByActiveTrue()
+                .orElseThrow(() -> new NotFoundException("No active Terms version is configured"));
+    }
+
+    private boolean isAccepted(UUID userId, TermsVersion active) {
+        if (!active.isRequiresReAcceptance()) {
+            return termsAcceptanceRepository.findTopByUserIdOrderByTermsVersionVersionNumberDescAcceptedAtDesc(userId)
+                    .isPresent();
+        }
+        return termsAcceptanceRepository.findByUserIdAndTermsVersionId(userId, active.getId()).isPresent();
+    }
+
+    private Integer latestAcceptedVersionNumber(UUID userId) {
+        return termsAcceptanceRepository.findTopByUserIdOrderByTermsVersionVersionNumberDescAcceptedAtDesc(userId)
+                .map(acceptance -> acceptance.getTermsVersion().getVersionNumber())
+                .orElse(null);
+    }
+
+    private TermsDtos.TermsVersionResponse toVersionResponse(TermsVersion version) {
+        return new TermsDtos.TermsVersionResponse(
+                version.getId(),
+                version.getVersionNumber(),
+                version.getVersionLabel(),
+                version.getContentUrl(),
+                version.getContentSha256(),
+                version.isRequiresReAcceptance(),
+                version.getEffectiveDate()
+        );
+    }
+
+    private TermsDtos.AdminTermsVersionResponse toAdminVersionResponse(TermsVersion version) {
+        return new TermsDtos.AdminTermsVersionResponse(
+                version.getId(),
+                version.getVersionNumber(),
+                version.getVersionLabel(),
+                version.getContentUrl(),
+                version.getContentSha256(),
+                version.isRequiresReAcceptance(),
+                version.getEffectiveDate(),
+                version.getPublishedBy(),
+                version.getCreatedAt(),
+                version.isActive(),
+                termsAcceptanceRepository.countByTermsVersionId(version.getId())
+        );
+    }
+
+    private TermsDtos.TermsAcceptanceResponse toAcceptanceResponse(TermsAcceptance acceptance) {
+        TermsVersion version = acceptance.getTermsVersion();
+        return new TermsDtos.TermsAcceptanceResponse(
+                acceptance.getId(),
+                acceptance.getUserId(),
+                version.getVersionNumber(),
+                version.getVersionLabel(),
+                acceptance.getAcceptedAt(),
+                acceptance.getDeviceId(),
+                acceptance.getDeviceModel(),
+                acceptance.getOsVersion(),
+                acceptance.getAppVersion(),
+                acceptance.getPlatform(),
+                acceptance.getIpAddress(),
+                acceptance.getUserAgent()
+        );
+    }
+}
