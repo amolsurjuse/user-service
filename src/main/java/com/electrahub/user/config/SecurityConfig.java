@@ -85,6 +85,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/users/authenticate").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/*/principal").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/terms/current").permitAll()
                         .requestMatchers("/api/internal/**").permitAll()
                         .requestMatchers(
                                 "/api/v1/countries/**",

@@ -49,6 +49,14 @@ app:
     internal-api-key: ${APP_RBAC_INTERNAL_API_KEY:dev-rbac-internal-key}
     gateway-base-url: ${APP_RBAC_GATEWAY_BASE_URL:http://api-gateway:8090}
     gateway-invalidate-path: ${APP_RBAC_GATEWAY_INVALIDATE_PATH:/internal/rbac/cache/invalidate}
+  terms:
+    initial-version:
+      enabled: ${APP_TERMS_INITIAL_VERSION_ENABLED:true}
+      admin-email: ${APP_TERMS_INITIAL_VERSION_ADMIN_EMAIL:${APP_DEV_ADMIN_EMAIL:sysadmin.dev@electrahub.com}}
+      version-label: ${APP_TERMS_INITIAL_VERSION_LABEL:May 2026}
+      content-url: ${APP_TERMS_INITIAL_VERSION_CONTENT_URL:https://cdn.electrahub.com/legal/terms/v1.html}
+      content-sha256: ${APP_TERMS_INITIAL_VERSION_CONTENT_SHA256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+      requires-re-acceptance: ${APP_TERMS_INITIAL_VERSION_REQUIRES_RE_ACCEPTANCE:true}
 
 management:
   endpoints:
