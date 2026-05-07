@@ -19,6 +19,7 @@ public final class TermsDtos {
             String versionLabel,
             String contentUrl,
             String contentSha256,
+            String contentText,
             boolean requiresReAcceptance,
             OffsetDateTime effectiveDate
     ) {
@@ -69,6 +70,7 @@ public final class TermsDtos {
             String versionLabel,
             String contentUrl,
             String contentSha256,
+            String contentText,
             boolean requiresReAcceptance,
             OffsetDateTime effectiveDate,
             UUID publishedBy,
@@ -82,6 +84,7 @@ public final class TermsDtos {
             @NotBlank @Size(max = 32) String versionLabel,
             @NotBlank String contentUrl,
             @NotBlank @Pattern(regexp = "^[0-9a-fA-F]{64}$") String contentSha256,
+            @NotBlank String contentText,
             boolean requiresReAcceptance,
             OffsetDateTime effectiveDate
     ) {
@@ -93,7 +96,8 @@ public final class TermsDtos {
             Integer acceptedVersionNumber,
             String currentVersionLabel,
             String contentUrl,
-            String contentSha256
+            String contentSha256,
+            String contentText
     ) {
     }
 

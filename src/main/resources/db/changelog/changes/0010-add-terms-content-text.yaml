@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0010-add-terms-content-text
+      author: codex
+      changes:
+        - addColumn:
+            tableName: terms_versions
+            columns:
+              - column:
+                  name: content_text
+                  type: text
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              UPDATE user_mgmt.terms_versions
+              SET content_text = $terms$
+              ElectraHub Terms and Conditions
+
+              Effective May 2026
+
+              By using ElectraHub administrative tools, you agree to use the platform only for authorized business operations, support, charging network administration, billing review, and compliance activities.
+
+              You are responsible for protecting your credentials, signing out of shared devices, and reporting suspicious access. You may not misuse system access, attempt to bypass authorization controls, alter audit records, or access driver, payment, station, or session data without a legitimate operational reason.
+
+              ElectraHub stores user profile data, account status, role assignments, authentication audit details, charging session records, station and connector activity, pricing and billing records, payment transaction references, wallet activity, terms acceptance history, device details, IP address, and user agent details needed for security and compliance.
+
+              User data is stored in ElectraHub managed backend systems, including application databases, audit logs, operational indexes, and secure infrastructure used to run the ElectraHub platform. Payment data is processed according to the selected payment method and may be stored as transaction references, settlement records, and audit history. Sensitive secrets and credentials must not be exported or copied outside approved systems.
+
+              ElectraHub may use this data to provide charging services, administer accounts, secure the platform, investigate incidents, meet legal obligations, calculate pricing and settlement, support customer requests, and maintain audit trails.
+
+              Continued use of the Admin Portal confirms that you have read and accepted these terms.
+              $terms$
+              WHERE content_text IS NULL OR btrim(content_text) = '';
+        - addNotNullConstraint:
+            tableName: terms_versions
+            columnName: content_text
+            columnDataType: text

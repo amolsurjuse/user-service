@@ -55,7 +55,8 @@ public class TermsService {
                 acceptedVersion,
                 active.getVersionLabel(),
                 active.getContentUrl(),
-                active.getContentSha256()
+                active.getContentSha256(),
+                normalizeContentText(active.getContentText())
         );
     }
 
@@ -104,6 +105,7 @@ public class TermsService {
                 request.versionLabel().trim(),
                 request.contentUrl().trim(),
                 request.contentSha256().trim().toLowerCase(Locale.ROOT),
+                request.contentText().trim(),
                 request.requiresReAcceptance(),
                 request.effectiveDate() == null ? now : request.effectiveDate(),
                 adminUserId,
@@ -217,6 +219,7 @@ public class TermsService {
                 version.getVersionLabel(),
                 version.getContentUrl(),
                 version.getContentSha256(),
+                normalizeContentText(version.getContentText()),
                 version.isRequiresReAcceptance(),
                 version.getEffectiveDate()
         );
@@ -229,6 +232,7 @@ public class TermsService {
                 version.getVersionLabel(),
                 version.getContentUrl(),
                 version.getContentSha256(),
+                normalizeContentText(version.getContentText()),
                 version.isRequiresReAcceptance(),
                 version.getEffectiveDate(),
                 version.getPublishedBy(),
@@ -236,6 +240,10 @@ public class TermsService {
                 version.isActive(),
                 termsAcceptanceRepository.countByTermsVersionId(version.getId())
         );
+    }
+
+    private String normalizeContentText(String contentText) {
+        return contentText == null ? "" : contentText;
     }
 
     private TermsDtos.TermsAcceptanceResponse toAcceptanceResponse(TermsAcceptance acceptance) {
