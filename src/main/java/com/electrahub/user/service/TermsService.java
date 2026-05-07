@@ -55,7 +55,8 @@ public class TermsService {
                 acceptedVersion,
                 active.getVersionLabel(),
                 active.getContentUrl(),
-                active.getContentSha256()
+                active.getContentSha256(),
+                active.getContentText()
         );
     }
 
@@ -104,6 +105,7 @@ public class TermsService {
                 request.versionLabel().trim(),
                 request.contentUrl().trim(),
                 request.contentSha256().trim().toLowerCase(Locale.ROOT),
+                request.contentText().trim(),
                 request.requiresReAcceptance(),
                 request.effectiveDate() == null ? now : request.effectiveDate(),
                 adminUserId,
@@ -217,6 +219,7 @@ public class TermsService {
                 version.getVersionLabel(),
                 version.getContentUrl(),
                 version.getContentSha256(),
+                version.getContentText(),
                 version.isRequiresReAcceptance(),
                 version.getEffectiveDate()
         );
@@ -229,6 +232,7 @@ public class TermsService {
                 version.getVersionLabel(),
                 version.getContentUrl(),
                 version.getContentSha256(),
+                version.getContentText(),
                 version.isRequiresReAcceptance(),
                 version.getEffectiveDate(),
                 version.getPublishedBy(),

@@ -27,6 +27,9 @@ public class TermsVersion {
     @Column(name = "content_sha256", nullable = false, length = 64)
     private String contentSha256;
 
+    @Column(name = "content_text", nullable = false)
+    private String contentText;
+
     @Column(name = "requires_re_acceptance", nullable = false)
     private boolean requiresReAcceptance;
 
@@ -51,6 +54,7 @@ public class TermsVersion {
             String versionLabel,
             String contentUrl,
             String contentSha256,
+            String contentText,
             boolean requiresReAcceptance,
             OffsetDateTime effectiveDate,
             UUID publishedBy,
@@ -61,6 +65,7 @@ public class TermsVersion {
         this.versionLabel = versionLabel;
         this.contentUrl = contentUrl;
         this.contentSha256 = contentSha256;
+        this.contentText = contentText;
         this.requiresReAcceptance = requiresReAcceptance;
         this.effectiveDate = effectiveDate;
         this.publishedBy = publishedBy;
@@ -86,6 +91,10 @@ public class TermsVersion {
 
     public String getContentSha256() {
         return contentSha256;
+    }
+
+    public String getContentText() {
+        return contentText;
     }
 
     public boolean isRequiresReAcceptance() {
