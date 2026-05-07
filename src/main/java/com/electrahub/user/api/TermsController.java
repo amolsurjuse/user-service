@@ -2,6 +2,7 @@ package com.electrahub.user.api;
 
 import com.electrahub.user.api.dto.TermsDtos;
 import com.electrahub.user.security.AuthenticatedUser;
+import com.electrahub.user.service.TermsAudience;
 import com.electrahub.user.service.TermsService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -39,8 +40,12 @@ public class TermsController {
     }
 
     @GetMapping("/current")
-    public TermsDtos.TermsVersionResponse current() {
-        return termsService.currentTerms();
+    public TermsDtos.TermsVersionResponse current(
+            @RequestParam(required = false) String uiType,
+            @RequestParam(required = false) String clientType,
+            HttpServletRequest servletRequest
+    ) {
+        return termsService.currentTerms(resolveAudience(uiType, clientType, servletRequest));
     }
 
     @GetMapping("/status")
@@ -114,5 +119,22 @@ public class TermsController {
         }
         String remoteAddr = request.getRemoteAddr();
         return remoteAddr == null || remoteAddr.isBlank() ? "unknown" : remoteAddr;
+    }
+
+    private TermsAudience resolveAudience(String uiType, String clientType, HttpServletRequest request) {
+        TermsAudience explicit = TermsAudience.from(uiType == null || uiType.isBlank() ? clientType : uiType);
+        if (explicit == TermsAudience.ADMIN_PORTAL) {
+            return explicit;
+        }
+        String origin = request.getHeader(HttpHeaders.ORIGIN);
+        String referer = request.getHeader(HttpHeaders.REFERER);
+        if (containsAdminPortal(origin) || containsAdminPortal(referer)) {
+            return TermsAudience.ADMIN_PORTAL;
+        }
+        return TermsAudience.DRIVER_PORTAL;
+    }
+
+    private boolean containsAdminPortal(String value) {
+        return value != null && value.toLowerCase().contains("admin-portal");
     }
 }

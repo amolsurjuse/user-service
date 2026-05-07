@@ -19,6 +19,23 @@ import java.util.UUID;
 
 @Service
 public class TermsService {
+    private static final String DRIVER_CONTENT_TEXT = """
+            ElectraHub Driver App Terms and Conditions
+
+            Effective May 2026
+
+            By using the ElectraHub Driver App, you agree to use the app for personal electric vehicle charging, account management, payment, wallet, charging history, and support activities.
+
+            You are responsible for protecting your account, securing your device, and reporting suspicious activity. You may not misuse charging equipment, attempt to bypass authorization or payment controls, interfere with other drivers' sessions, or use the app in a way that disrupts ElectraHub services.
+
+            ElectraHub stores driver profile data, account status, authentication audit details, charging session records, station and connector activity, pricing and billing records, payment transaction references, wallet activity, terms acceptance history, device details, IP address, and user agent details needed for service delivery, security, billing, and compliance.
+
+            Driver data is stored in ElectraHub managed backend systems, including application databases, audit logs, operational indexes, and secure infrastructure used to run the ElectraHub platform. Payment data is processed according to the selected payment method and may be stored as transaction references, settlement records, and audit history.
+
+            ElectraHub may use this data to provide charging services, administer accounts, secure the platform, investigate incidents, meet legal obligations, calculate pricing and settlement, support customer requests, and maintain audit trails.
+
+            Continued use of the Driver App confirms that you have read and accepted these terms.
+            """;
 
     private final TermsVersionRepository termsVersionRepository;
     private final TermsAcceptanceRepository termsAcceptanceRepository;
@@ -33,7 +50,12 @@ public class TermsService {
 
     @Transactional(readOnly = true)
     public TermsDtos.TermsVersionResponse currentTerms() {
-        return toVersionResponse(activeVersion());
+        return currentTerms(TermsAudience.DRIVER_PORTAL);
+    }
+
+    @Transactional(readOnly = true)
+    public TermsDtos.TermsVersionResponse currentTerms(TermsAudience audience) {
+        return toVersionResponse(activeVersion(), audience);
     }
 
     @Transactional(readOnly = true)
@@ -46,6 +68,11 @@ public class TermsService {
 
     @Transactional(readOnly = true)
     public TermsDtos.TermsGateStatusResponse gateStatus(UUID userId) {
+        return gateStatus(userId, TermsAudience.DRIVER_PORTAL);
+    }
+
+    @Transactional(readOnly = true)
+    public TermsDtos.TermsGateStatusResponse gateStatus(UUID userId, TermsAudience audience) {
         TermsVersion active = activeVersion();
         Integer acceptedVersion = latestAcceptedVersionNumber(userId);
         boolean accepted = isAccepted(userId, active);
@@ -56,7 +83,7 @@ public class TermsService {
                 active.getVersionLabel(),
                 active.getContentUrl(),
                 active.getContentSha256(),
-                normalizeContentText(active.getContentText())
+                contentTextForAudience(active, audience)
         );
     }
 
@@ -212,14 +239,14 @@ public class TermsService {
                 .orElse(null);
     }
 
-    private TermsDtos.TermsVersionResponse toVersionResponse(TermsVersion version) {
+    private TermsDtos.TermsVersionResponse toVersionResponse(TermsVersion version, TermsAudience audience) {
         return new TermsDtos.TermsVersionResponse(
                 version.getId(),
                 version.getVersionNumber(),
                 version.getVersionLabel(),
                 version.getContentUrl(),
                 version.getContentSha256(),
-                normalizeContentText(version.getContentText()),
+                contentTextForAudience(version, audience),
                 version.isRequiresReAcceptance(),
                 version.getEffectiveDate()
         );
@@ -244,6 +271,19 @@ public class TermsService {
 
     private String normalizeContentText(String contentText) {
         return contentText == null ? "" : contentText;
+    }
+
+    private String contentTextForAudience(TermsVersion version, TermsAudience audience) {
+        String contentText = normalizeContentText(version.getContentText()).trim();
+        if (audience == TermsAudience.DRIVER_PORTAL && (contentText.isBlank() || looksAdminSpecific(contentText))) {
+            return DRIVER_CONTENT_TEXT.trim();
+        }
+        return contentText;
+    }
+
+    private boolean looksAdminSpecific(String contentText) {
+        String normalized = contentText.toLowerCase(Locale.ROOT);
+        return normalized.contains("admin portal") || normalized.contains("administrative tools");
     }
 
     private TermsDtos.TermsAcceptanceResponse toAcceptanceResponse(TermsAcceptance acceptance) {

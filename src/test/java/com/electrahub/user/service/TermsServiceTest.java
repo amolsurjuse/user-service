@@ -27,11 +27,22 @@ class TermsServiceTest {
         TermsVersion active = activeTermsVersion("ELECTRA HUB TERMS & CONDITIONS\n\nEffective Date: May 7, 2026");
         when(termsVersionRepository.findByActiveTrue()).thenReturn(Optional.of(active));
 
-        var response = termsService.currentTerms();
+        var response = termsService.currentTerms(TermsAudience.ADMIN_PORTAL);
 
         assertThat(response.contentText()).isEqualTo(active.getContentText());
         assertThat(response.contentUrl()).isEqualTo("https://cdn.electrahub.com/legal/terms/v1.html");
         assertThat(response.contentSha256()).isEqualTo("a1b2c3d4");
+    }
+
+    @Test
+    void currentTermsReturnsDriverTextWhenStoredVersionIsAdminSpecific() {
+        TermsVersion active = activeTermsVersion("Continued use of the Admin Portal confirms acceptance.");
+        when(termsVersionRepository.findByActiveTrue()).thenReturn(Optional.of(active));
+
+        var response = termsService.currentTerms(TermsAudience.DRIVER_PORTAL);
+
+        assertThat(response.contentText()).contains("Driver App");
+        assertThat(response.contentText()).doesNotContain("Admin Portal");
     }
 
     @Test
@@ -44,7 +55,7 @@ class TermsServiceTest {
         when(termsAcceptanceRepository.findByUserIdAndTermsVersionId(userId, active.getId()))
                 .thenReturn(Optional.empty());
 
-        var response = termsService.gateStatus(userId);
+        var response = termsService.gateStatus(userId, TermsAudience.DRIVER_PORTAL);
 
         assertThat(response.termsAccepted()).isFalse();
         assertThat(response.contentText()).isEqualTo("Plain-text terms for portal display");
