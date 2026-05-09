@@ -76,8 +76,8 @@ public class User {
      * enforces component-specific rules in `com.electrahub.user.domain`.
      */
     protected User() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering User#User");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering User#User with debug context");
+        LOGGER.info(" Entering User#User");
+        LOGGER.debug(" Entering User#User with debug context");
     }
 
     /**

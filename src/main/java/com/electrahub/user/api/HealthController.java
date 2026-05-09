@@ -23,8 +23,8 @@ public class HealthController {
      */
     @GetMapping("/ping")
     public Map<String, String> ping() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering HealthController#ping");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering HealthController#ping with debug context");
+        LOGGER.info(" Entering HealthController#ping");
+        LOGGER.debug(" Entering HealthController#ping with debug context");
         return Map.of("status", "ok");
     }
 }

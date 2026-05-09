@@ -20,8 +20,8 @@ public class UserServiceApplication {
      * @param args input consumed by main.
      */
     public static void main(String[] args) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering UserServiceApplication#main");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserServiceApplication#main with debug context");
+        LOGGER.info(" Entering UserServiceApplication#main");
+        LOGGER.debug(" Entering UserServiceApplication#main with debug context");
         SpringApplication.run(UserServiceApplication.class, args);
     }
 }

@@ -37,8 +37,8 @@ public class Country {
      * enforces component-specific rules in `com.electrahub.user.domain`.
      */
     protected Country() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering Country#Country");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering Country#Country with debug context");
+        LOGGER.info(" Entering Country#Country");
+        LOGGER.debug(" Entering Country#Country with debug context");
     }
 
     /**

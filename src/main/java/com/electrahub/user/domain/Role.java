@@ -28,8 +28,8 @@ public class Role {
      * enforces component-specific rules in `com.electrahub.user.domain`.
      */
     protected Role() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering Role#Role");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering Role#Role with debug context");
+        LOGGER.info(" Entering Role#Role");
+        LOGGER.debug(" Entering Role#Role with debug context");
     }
 
     /**

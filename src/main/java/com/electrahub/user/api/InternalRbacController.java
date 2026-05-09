@@ -28,8 +28,8 @@ public class InternalRbacController {
      * @param rbacPolicyService input consumed by InternalRbacController.
      */
     public InternalRbacController(InternalApiKeyGuard internalApiKeyGuard, RbacPolicyService rbacPolicyService) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering InternalRbacController#InternalRbacController");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering InternalRbacController#InternalRbacController with debug context");
+        LOGGER.info(" Entering InternalRbacController#InternalRbacController");
+        LOGGER.debug(" Entering InternalRbacController#InternalRbacController with debug context");
         this.internalApiKeyGuard = internalApiKeyGuard;
         this.rbacPolicyService = rbacPolicyService;
     }

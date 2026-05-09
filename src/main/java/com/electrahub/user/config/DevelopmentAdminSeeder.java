@@ -58,8 +58,8 @@ public class DevelopmentAdminSeeder implements ApplicationRunner {
      * @param roleRepository input consumed by DevelopmentAdminSeeder.
      */
     public DevelopmentAdminSeeder(UserRepository userRepository, RoleRepository roleRepository) {
-        log.info("CODEx_ENTRY_LOG: Entering DevelopmentAdminSeeder#DevelopmentAdminSeeder");
-        log.debug("CODEx_ENTRY_LOG: Entering DevelopmentAdminSeeder#DevelopmentAdminSeeder with debug context");
+        log.info(" Entering DevelopmentAdminSeeder#DevelopmentAdminSeeder");
+        log.debug(" Entering DevelopmentAdminSeeder#DevelopmentAdminSeeder with debug context");
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
     }

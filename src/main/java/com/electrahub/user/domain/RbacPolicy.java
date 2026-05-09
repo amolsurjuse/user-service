@@ -53,8 +53,8 @@ public class RbacPolicy {
      * enforces component-specific rules in `com.electrahub.user.domain`.
      */
     protected RbacPolicy() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RbacPolicy#RbacPolicy");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RbacPolicy#RbacPolicy with debug context");
+        LOGGER.info(" Entering RbacPolicy#RbacPolicy");
+        LOGGER.debug(" Entering RbacPolicy#RbacPolicy with debug context");
     }
 
     /**

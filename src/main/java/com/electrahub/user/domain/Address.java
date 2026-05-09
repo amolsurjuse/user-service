@@ -44,8 +44,8 @@ public class Address {
      * enforces component-specific rules in `com.electrahub.user.domain`.
      */
     protected Address() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering Address#Address");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering Address#Address with debug context");
+        LOGGER.info(" Entering Address#Address");
+        LOGGER.debug(" Entering Address#Address with debug context");
     }
 
     /**

@@ -25,8 +25,8 @@ public class PaymentProvisioningClient {
      * @return result produced by Value.
      */
     public PaymentProvisioningClient(@Value("${app.payment-service.base-url}") String paymentBaseUrl) {
-        log.info("CODEx_ENTRY_LOG: Entering PaymentProvisioningClient#Value");
-        log.debug("CODEx_ENTRY_LOG: Entering PaymentProvisioningClient#Value with debug context");
+        log.info(" Entering PaymentProvisioningClient#Value");
+        log.debug(" Entering PaymentProvisioningClient#Value with debug context");
         this.restClient = RestClient.builder()
                 .baseUrl(paymentBaseUrl)
                 .build();

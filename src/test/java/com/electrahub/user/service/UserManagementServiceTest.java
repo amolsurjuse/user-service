@@ -71,8 +71,8 @@ class UserManagementServiceTest {
      */
     @AfterEach
     void clearSecurityContext() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering UserManagementServiceTest#clearSecurityContext");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserManagementServiceTest#clearSecurityContext with debug context");
+        LOGGER.info(" Entering UserManagementServiceTest#clearSecurityContext");
+        LOGGER.debug(" Entering UserManagementServiceTest#clearSecurityContext with debug context");
         SecurityContextHolder.clearContext();
     }
 

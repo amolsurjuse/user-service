@@ -44,8 +44,8 @@ public class AdminUserController {
      * @param userManagementService input consumed by AdminUserController.
      */
     public AdminUserController(UserManagementService userManagementService) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering AdminUserController#AdminUserController");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering AdminUserController#AdminUserController with debug context");
+        LOGGER.info(" Entering AdminUserController#AdminUserController");
+        LOGGER.debug(" Entering AdminUserController#AdminUserController with debug context");
         this.userManagementService = userManagementService;
     }
 

@@ -42,8 +42,8 @@ public class UserQueryController {
      * @param userManagementService input consumed by UserQueryController.
      */
     public UserQueryController(UserManagementService userManagementService) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering UserQueryController#UserQueryController");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserQueryController#UserQueryController with debug context");
+        LOGGER.info(" Entering UserQueryController#UserQueryController");
+        LOGGER.debug(" Entering UserQueryController#UserQueryController with debug context");
         this.userManagementService = userManagementService;
     }
 

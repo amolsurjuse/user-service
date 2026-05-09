@@ -57,8 +57,8 @@ public class RbacPolicyService {
      */
     @Transactional(readOnly = true)
     public RbacPolicyResponse readAdminPolicy() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RbacPolicyService#readAdminPolicy");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RbacPolicyService#readAdminPolicy with debug context");
+        LOGGER.info(" Entering RbacPolicyService#readAdminPolicy");
+        LOGGER.debug(" Entering RbacPolicyService#readAdminPolicy with debug context");
         RbacPolicy policy = loadPolicyRequired();
         return toAdminResponse(policy);
     }

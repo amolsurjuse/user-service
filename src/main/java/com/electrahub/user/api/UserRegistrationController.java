@@ -30,8 +30,8 @@ public class UserRegistrationController {
      * @param userManagementService input consumed by UserRegistrationController.
      */
     public UserRegistrationController(UserManagementService userManagementService) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering UserRegistrationController#UserRegistrationController");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserRegistrationController#UserRegistrationController with debug context");
+        LOGGER.info(" Entering UserRegistrationController#UserRegistrationController");
+        LOGGER.debug(" Entering UserRegistrationController#UserRegistrationController with debug context");
         this.userManagementService = userManagementService;
     }
 

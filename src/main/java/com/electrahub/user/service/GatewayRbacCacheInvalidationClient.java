@@ -25,8 +25,8 @@ public class GatewayRbacCacheInvalidationClient {
      * @param rbacSyncProperties input consumed by GatewayRbacCacheInvalidationClient.
      */
     public GatewayRbacCacheInvalidationClient(RbacSyncProperties rbacSyncProperties) {
-        log.info("CODEx_ENTRY_LOG: Entering GatewayRbacCacheInvalidationClient#GatewayRbacCacheInvalidationClient");
-        log.debug("CODEx_ENTRY_LOG: Entering GatewayRbacCacheInvalidationClient#GatewayRbacCacheInvalidationClient with debug context");
+        log.info(" Entering GatewayRbacCacheInvalidationClient#GatewayRbacCacheInvalidationClient");
+        log.debug(" Entering GatewayRbacCacheInvalidationClient#GatewayRbacCacheInvalidationClient with debug context");
         this.rbacSyncProperties = rbacSyncProperties;
         this.restClient = RestClient.builder()
                 .baseUrl(rbacSyncProperties.getGatewayBaseUrl())

@@ -23,8 +23,8 @@ public class InternalApiKeyGuard {
      * @param rbacSyncProperties input consumed by InternalApiKeyGuard.
      */
     public InternalApiKeyGuard(RbacSyncProperties rbacSyncProperties) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering InternalApiKeyGuard#InternalApiKeyGuard");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering InternalApiKeyGuard#InternalApiKeyGuard with debug context");
+        LOGGER.info(" Entering InternalApiKeyGuard#InternalApiKeyGuard");
+        LOGGER.debug(" Entering InternalApiKeyGuard#InternalApiKeyGuard with debug context");
         this.rbacSyncProperties = rbacSyncProperties;
     }
 

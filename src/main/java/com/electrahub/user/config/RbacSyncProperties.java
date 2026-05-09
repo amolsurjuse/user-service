@@ -24,8 +24,8 @@ public class RbacSyncProperties {
      * @return result produced by getPolicyKey.
      */
     public String getPolicyKey() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RbacSyncProperties#getPolicyKey");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RbacSyncProperties#getPolicyKey with debug context");
+        LOGGER.info(" Entering RbacSyncProperties#getPolicyKey");
+        LOGGER.debug(" Entering RbacSyncProperties#getPolicyKey with debug context");
         return policyKey;
     }
 

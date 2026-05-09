@@ -15,7 +15,7 @@ public class UnauthorizedException extends RuntimeException {
      */
     public UnauthorizedException(String message) {
         super(message);
-        LOGGER.info("CODEx_ENTRY_LOG: Entering UnauthorizedException#UnauthorizedException");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering UnauthorizedException#UnauthorizedException with debug context");
+        LOGGER.info(" Entering UnauthorizedException#UnauthorizedException");
+        LOGGER.debug(" Entering UnauthorizedException#UnauthorizedException with debug context");
     }
 }

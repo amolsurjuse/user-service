@@ -32,8 +32,8 @@ public class AdminRbacController {
      * @param rbacPolicyService input consumed by AdminRbacController.
      */
     public AdminRbacController(RbacPolicyService rbacPolicyService) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering AdminRbacController#AdminRbacController");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering AdminRbacController#AdminRbacController with debug context");
+        LOGGER.info(" Entering AdminRbacController#AdminRbacController");
+        LOGGER.debug(" Entering AdminRbacController#AdminRbacController with debug context");
         this.rbacPolicyService = rbacPolicyService;
     }
 

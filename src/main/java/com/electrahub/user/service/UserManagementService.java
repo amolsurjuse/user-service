@@ -83,8 +83,8 @@ public class UserManagementService {
      */
     @Transactional
     public UserPrincipalResponse register(RegisterUserRequest request) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering UserManagementService#register");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserManagementService#register with debug context");
+        LOGGER.info(" Entering UserManagementService#register");
+        LOGGER.debug(" Entering UserManagementService#register with debug context");
         String normalizedEmail = normalizeEmail(request.email());
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new ConflictException("Email already registered");

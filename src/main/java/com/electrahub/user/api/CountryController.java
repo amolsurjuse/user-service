@@ -26,8 +26,8 @@ public class CountryController {
      * @param userManagementService input consumed by CountryController.
      */
     public CountryController(UserManagementService userManagementService) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering CountryController#CountryController");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering CountryController#CountryController with debug context");
+        LOGGER.info(" Entering CountryController#CountryController");
+        LOGGER.debug(" Entering CountryController#CountryController with debug context");
         this.userManagementService = userManagementService;
     }
 

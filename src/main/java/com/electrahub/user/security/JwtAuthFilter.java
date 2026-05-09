@@ -32,8 +32,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
      * @param jwtService input consumed by JwtAuthFilter.
      */
     public JwtAuthFilter(JwtService jwtService) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtAuthFilter#JwtAuthFilter");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtAuthFilter#JwtAuthFilter with debug context");
+        LOGGER.info(" Entering JwtAuthFilter#JwtAuthFilter");
+        LOGGER.debug(" Entering JwtAuthFilter#JwtAuthFilter with debug context");
         this.jwtService = jwtService;
     }
 
