@@ -1,0 +1,75 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0011-add-terms-rbac-rules
+      author: codex
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              WITH policy AS (
+                SELECT id
+                FROM rbac_policies
+                WHERE policy_key = 'gateway-default'
+              ),
+              requested_rules(rule_id, name, methods, path_pattern, effect, allow_anonymous, required_roles) AS (
+                VALUES
+                  ('00000000-0000-0000-0000-000000000301'::uuid, 'terms-current-public', 'GET', '/terms/api/v1/terms/current', 'ALLOW', true, NULL),
+                  ('00000000-0000-0000-0000-000000000302'::uuid, 'terms-authenticated', 'GET,POST', '/terms/api/v1/terms/**', 'ALLOW', false, 'USER'),
+                  ('00000000-0000-0000-0000-000000000303'::uuid, 'terms-admin', '*', '/admin/api/v1/terms/**', 'ALLOW', false, 'SYSTEM_ADMIN'),
+                  ('00000000-0000-0000-0000-000000000304'::uuid, 'terms-admin-root', 'GET,POST', '/admin/api/v1/terms', 'ALLOW', false, 'SYSTEM_ADMIN'),
+                  ('00000000-0000-0000-0000-000000000305'::uuid, 'legacy-terms-current', 'GET', '/user/api/v1/terms/current', 'ALLOW', true, NULL),
+                  ('00000000-0000-0000-0000-000000000306'::uuid, 'legacy-terms-accept', 'POST', '/user/api/v1/terms/accept', 'ALLOW', false, 'USER'),
+                  ('00000000-0000-0000-0000-000000000307'::uuid, 'legacy-terms-acceptance-status', 'GET', '/user/api/v1/terms/status', 'ALLOW', false, 'USER'),
+                  ('00000000-0000-0000-0000-000000000308'::uuid, 'legacy-terms-admin', '*', '/user/api/v1/admin/terms/**', 'ALLOW', false, 'SYSTEM_ADMIN')
+              ),
+              missing_rules AS (
+                SELECT
+                  row_number() OVER (ORDER BY rr.name) AS rn,
+                  rr.*
+                FROM requested_rules rr
+                CROSS JOIN policy p
+                WHERE NOT EXISTS (
+                  SELECT 1
+                  FROM rbac_policy_rules existing
+                  WHERE existing.policy_id = p.id
+                    AND existing.name = rr.name
+                )
+              ),
+              base_sort AS (
+                SELECT p.id AS policy_id, COALESCE(MAX(r.sort_order), -1) AS max_sort_order
+                FROM policy p
+                LEFT JOIN rbac_policy_rules r ON r.policy_id = p.id
+                GROUP BY p.id
+              ),
+              inserted AS (
+                INSERT INTO rbac_policy_rules (
+                  id,
+                  policy_id,
+                  sort_order,
+                  name,
+                  methods,
+                  path_pattern,
+                  effect,
+                  allow_anonymous,
+                  required_roles
+                )
+                SELECT
+                  m.rule_id,
+                  b.policy_id,
+                  b.max_sort_order + m.rn,
+                  m.name,
+                  m.methods,
+                  m.path_pattern,
+                  m.effect,
+                  m.allow_anonymous,
+                  m.required_roles
+                FROM missing_rules m
+                CROSS JOIN base_sort b
+                RETURNING policy_id
+              )
+              UPDATE rbac_policies p
+              SET version = p.version + 1,
+                  updated_at = now()
+              WHERE p.id IN (SELECT DISTINCT policy_id FROM inserted);
