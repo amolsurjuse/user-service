@@ -1,10 +1,9 @@
 package com.electrahub.user.grpc;
 
 import com.electrahub.proto.user.v1.AdminRbacServiceGrpc;
-import com.electrahub.proto.user.v1.GetAdminPolicyRequest;
-import com.electrahub.proto.user.v1.UpdateAdminPolicyRequest;
-import com.electrahub.proto.user.v1.AdminRbacPolicyResponse;
-import com.electrahub.proto.user.v1.AdminRbacRule;
+import com.electrahub.proto.user.v1.ReadAdminRbacPolicyRequest;
+import com.electrahub.proto.user.v1.UpdateAdminRbacPolicyRequest;
+import com.electrahub.proto.user.v1.RbacPolicyResponse;
 import com.electrahub.user.api.dto.RbacPolicyResponse;
 import com.electrahub.user.api.dto.RbacPolicyUpdateRequest;
 import com.electrahub.user.api.dto.RbacRuleRequest;
@@ -29,29 +28,39 @@ public class AdminRbacGrpcService extends AdminRbacServiceGrpc.AdminRbacServiceI
     }
 
     @Override
-    public void getAdminPolicy(
-            GetAdminPolicyRequest request,
-            StreamObserver<AdminRbacPolicyResponse> responseObserver
+    public void readAdminPolicy(
+            ReadAdminRbacPolicyRequest request,
+            StreamObserver<RbacPolicyResponse> responseObserver
     ) {
         try {
             LOGGER.debug("gRPC: Reading admin RBAC policy");
 
             RbacPolicyResponse policy = rbacPolicyService.readAdminPolicy();
-            responseObserver.onNext(convertToProto(policy));
+            com.electrahub.proto.user.v1.RbacPolicyResponse response = convertToProto(policy);
+
+            responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (IllegalStateException e) {
             LOGGER.warn("Policy not configured", e);
-            responseObserver.onError(Status.NOT_FOUND.withDescription("RBAC policy not configured").asException());
+            responseObserver.onError(
+                    Status.NOT_FOUND
+                            .withDescription("RBAC policy not configured")
+                            .asException()
+            );
         } catch (Exception e) {
-            LOGGER.error("Unexpected error in getAdminPolicy", e);
-            responseObserver.onError(Status.INTERNAL.withDescription("Internal server error").asException());
+            LOGGER.error("Unexpected error in readAdminPolicy", e);
+            responseObserver.onError(
+                    Status.INTERNAL
+                            .withDescription("Internal server error")
+                            .asException()
+            );
         }
     }
 
     @Override
     public void updateAdminPolicy(
-            UpdateAdminPolicyRequest request,
-            StreamObserver<AdminRbacPolicyResponse> responseObserver
+            UpdateAdminRbacPolicyRequest request,
+            StreamObserver<RbacPolicyResponse> responseObserver
     ) {
         try {
             LOGGER.debug("gRPC: Updating admin RBAC policy");
@@ -59,9 +68,9 @@ public class AdminRbacGrpcService extends AdminRbacServiceGrpc.AdminRbacServiceI
             List<RbacRuleRequest> rules = request.getRulesList().stream()
                     .map(rule -> new RbacRuleRequest(
                             rule.getName(),
-                            rule.getMethodsList(),
                             rule.getPathPattern(),
                             rule.getEffect(),
+                            rule.getMethodsList(),
                             rule.getAllowAnonymous(),
                             rule.getRequiredRolesList()
                     ))
@@ -74,48 +83,54 @@ public class AdminRbacGrpcService extends AdminRbacServiceGrpc.AdminRbacServiceI
             );
 
             RbacPolicyResponse policy = rbacPolicyService.updatePolicy(updateRequest);
-            responseObserver.onNext(convertToProto(policy));
+            com.electrahub.proto.user.v1.RbacPolicyResponse response = convertToProto(policy);
+
+            responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (IllegalArgumentException e) {
             LOGGER.warn("Invalid argument in updateAdminPolicy", e);
-            responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asException());
+            responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                            .withDescription(e.getMessage())
+                            .asException()
+            );
         } catch (IllegalStateException e) {
             LOGGER.warn("Invalid state in updateAdminPolicy", e);
-            responseObserver.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asException());
+            responseObserver.onError(
+                    Status.FAILED_PRECONDITION
+                            .withDescription(e.getMessage())
+                            .asException()
+            );
         } catch (Exception e) {
             LOGGER.error("Unexpected error in updateAdminPolicy", e);
-            responseObserver.onError(Status.INTERNAL.withDescription("Internal server error").asException());
+            responseObserver.onError(
+                    Status.INTERNAL
+                            .withDescription("Internal server error")
+                            .asException()
+            );
         }
     }
 
-    private AdminRbacPolicyResponse convertToProto(RbacPolicyResponse policy) {
-        var builder = AdminRbacPolicyResponse.newBuilder()
-                .setPolicyKey(policy.policyKey() != null ? policy.policyKey() : "")
+    private com.electrahub.proto.user.v1.RbacPolicyResponse convertToProto(RbacPolicyResponse policy) {
+        var builder = com.electrahub.proto.user.v1.RbacPolicyResponse.newBuilder()
+                .setVersion(policy.version() != null ? policy.version().toString() : "")
                 .setRoleHierarchy(policy.roleHierarchy() != null ? policy.roleHierarchy() : "")
-                .setDefaultDecision(policy.defaultDecision() != null ? policy.defaultDecision() : "")
-                .setVersion(policy.version());
+                .setDefaultDecision(policy.defaultDecision() != null ? policy.defaultDecision() : "");
 
         if (policy.availableRoles() != null) {
             policy.availableRoles().forEach(builder::addAvailableRoles);
         }
 
-        if (policy.updatedAt() != null) {
-            builder.setUpdatedAt(com.google.protobuf.Timestamp.newBuilder()
-                    .setSeconds(policy.updatedAt().toEpochSecond())
-                    .setNanos(policy.updatedAt().getNano())
-                    .build());
-        }
-
         if (policy.rules() != null) {
             policy.rules().forEach(rule ->
-                    builder.addRules(AdminRbacRule.newBuilder()
-                            .setRuleId(rule.ruleId().toString())
+                    builder.addRules(com.electrahub.proto.user.v1.RbacRule.newBuilder()
+                            .setId(rule.id().toString())
                             .setSortOrder(rule.sortOrder())
                             .setName(rule.name())
-                            .addAllMethods(rule.methods() != null ? rule.methods() : List.of())
                             .setPathPattern(rule.pathPattern())
                             .setEffect(rule.effect())
                             .setAllowAnonymous(rule.allowAnonymous())
+                            .addAllMethods(rule.methods() != null ? rule.methods() : List.of())
                             .addAllRequiredRoles(rule.requiredRoles() != null ? rule.requiredRoles() : List.of())
                             .build())
             );

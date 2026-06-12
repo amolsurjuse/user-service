@@ -17,8 +17,6 @@ public record UserProfileResponse(
         String countryName,
         String countryDialCode,
         boolean enabled,
-        boolean pendingDeletion,
-        OffsetDateTime deletionRequestedAt,
         OffsetDateTime createdAt
 ) {
 }

@@ -49,12 +49,6 @@ public class User {
     @Column(nullable = false)
     private boolean enabled;
 
-    @Column(name = "pending_deletion", nullable = false)
-    private boolean pendingDeletion;
-
-    @Column(name = "deletion_requested_at")
-    private OffsetDateTime deletionRequestedAt;
-
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -96,8 +90,6 @@ public class User {
         this.email = email.toLowerCase();
         this.passwordHash = passwordHash;
         this.enabled = enabled;
-        this.pendingDeletion = false;
-        this.deletionRequestedAt = null;
         this.createdAt = now;
         this.updatedAt = now;
     }
@@ -199,28 +191,6 @@ public class User {
      */
     public boolean isEnabled() {
         return enabled;
-    }
-
-    /**
-     * Executes is pending deletion for `User`.
-     *
-     * <p>Detailed behavior: follows the current implementation path and
-     * enforces component-specific rules in `com.electrahub.user.domain`.
-     * @return result produced by isPendingDeletion.
-     */
-    public boolean isPendingDeletion() {
-        return pendingDeletion;
-    }
-
-    /**
-     * Retrieves get deletion requested at for `User`.
-     *
-     * <p>Detailed behavior: follows the current implementation path and
-     * enforces component-specific rules in `com.electrahub.user.domain`.
-     * @return result produced by getDeletionRequestedAt.
-     */
-    public OffsetDateTime getDeletionRequestedAt() {
-        return deletionRequestedAt;
     }
 
     /**
@@ -331,27 +301,5 @@ public class User {
      */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-    }
-
-    /**
-     * Updates set pending deletion for `User`.
-     *
-     * <p>Detailed behavior: follows the current implementation path and
-     * enforces component-specific rules in `com.electrahub.user.domain`.
-     * @param pendingDeletion input consumed by setPendingDeletion.
-     */
-    public void setPendingDeletion(boolean pendingDeletion) {
-        this.pendingDeletion = pendingDeletion;
-    }
-
-    /**
-     * Updates set deletion requested at for `User`.
-     *
-     * <p>Detailed behavior: follows the current implementation path and
-     * enforces component-specific rules in `com.electrahub.user.domain`.
-     * @param deletionRequestedAt input consumed by setDeletionRequestedAt.
-     */
-    public void setDeletionRequestedAt(OffsetDateTime deletionRequestedAt) {
-        this.deletionRequestedAt = deletionRequestedAt;
     }
 }

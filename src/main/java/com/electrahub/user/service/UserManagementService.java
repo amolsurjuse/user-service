@@ -8,8 +8,6 @@ import com.electrahub.user.api.dto.AdminUpdateUserRequest;
 import com.electrahub.user.api.dto.AdminUserDetailResponse;
 import com.electrahub.user.api.dto.AdminUserSearchResponse;
 import com.electrahub.user.api.dto.AdminUserSummaryResponse;
-import com.electrahub.user.api.dto.AccountDeletionDecision;
-import com.electrahub.user.api.dto.AccountDeletionResponse;
 import com.electrahub.user.api.dto.AuthenticateUserRequest;
 import com.electrahub.user.api.dto.CountryResponse;
 import com.electrahub.user.api.dto.RegisterUserRequest;
@@ -38,7 +36,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -53,24 +50,18 @@ public class UserManagementService {
     private final AddressRepository addressRepository;
     private final CountryRepository countryRepository;
     private final PaymentProvisioningClient paymentProvisioningClient;
-    private final PaymentAccountStateClient paymentAccountStateClient;
-    private final SessionActivityClient sessionActivityClient;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public UserManagementService(UserRepository userRepository,
                                  RoleRepository roleRepository,
                                  AddressRepository addressRepository,
                                  CountryRepository countryRepository,
-                                 PaymentProvisioningClient paymentProvisioningClient,
-                                 PaymentAccountStateClient paymentAccountStateClient,
-                                 SessionActivityClient sessionActivityClient) {
+                                 PaymentProvisioningClient paymentProvisioningClient) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.addressRepository = addressRepository;
         this.countryRepository = countryRepository;
         this.paymentProvisioningClient = paymentProvisioningClient;
-        this.paymentAccountStateClient = paymentAccountStateClient;
-        this.sessionActivityClient = sessionActivityClient;
     }
 
     /**
@@ -130,9 +121,6 @@ public class UserManagementService {
 
         if (!user.isEnabled()) {
             throw new UnauthorizedException("User is disabled");
-        }
-        if (user.isPendingDeletion()) {
-            throw new UnauthorizedException("User account is pending deletion");
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
@@ -360,90 +348,6 @@ public class UserManagementService {
         }
 
         User user = loadUser(userId);
-        hardDeleteUser(user);
-    }
-
-    @Transactional
-    public AccountDeletionResponse requestAccountDeletion(UUID userId, boolean confirmDirectDeletion) {
-        requireSelfOrSystemAdmin(userId);
-        User user = loadUser(userId);
-
-        if (user.isPendingDeletion()) {
-            return new AccountDeletionResponse(
-                    AccountDeletionDecision.ALREADY_PENDING_DELETION,
-                    "Your account is already marked for pending deletion review.",
-                    BigDecimal.ZERO,
-                    false,
-                    true,
-                    false,
-                    false,
-                    user.getDeletionRequestedAt()
-            );
-        }
-
-        String accountId = user.getId().toString();
-        boolean hasActiveChargingSession = sessionActivityClient.hasActiveChargingSession(accountId);
-        BigDecimal walletBalance = paymentAccountStateClient.walletBalance(accountId);
-
-        if (hasActiveChargingSession) {
-            return new AccountDeletionResponse(
-                    AccountDeletionDecision.ACTIVE_SESSION_IN_PROGRESS,
-                    "Please finish your active charging session before deleting your account.",
-                    walletBalance,
-                    true,
-                    false,
-                    false,
-                    false,
-                    null
-            );
-        }
-
-        if (walletBalance.compareTo(BigDecimal.ZERO) > 0) {
-            OffsetDateTime requestedAt = OffsetDateTime.now();
-            user.setPendingDeletion(true);
-            user.setDeletionRequestedAt(requestedAt);
-            user.setEnabled(false);
-            userRepository.save(user);
-
-            return new AccountDeletionResponse(
-                    AccountDeletionDecision.ACCOUNT_MARKED_PENDING_DELETION,
-                    "Account deletion request submitted. Your account is now pending deletion review in admin portal.",
-                    walletBalance,
-                    false,
-                    true,
-                    false,
-                    false,
-                    requestedAt
-            );
-        }
-
-        if (!confirmDirectDeletion) {
-            return new AccountDeletionResponse(
-                    AccountDeletionDecision.CONFIRM_DIRECT_DELETION,
-                    "Wallet balance is zero and no active charging was found. Confirm to delete your account permanently.",
-                    walletBalance,
-                    false,
-                    false,
-                    false,
-                    true,
-                    null
-            );
-        }
-
-        hardDeleteUser(user);
-        return new AccountDeletionResponse(
-                AccountDeletionDecision.ACCOUNT_DELETED,
-                "Your account has been deleted successfully.",
-                walletBalance,
-                false,
-                false,
-                true,
-                false,
-                null
-        );
-    }
-
-    private void hardDeleteUser(User user) {
         Address address = user.getAddress();
 
         user.getRoles().clear();
@@ -491,7 +395,6 @@ public class UserManagementService {
      * @param addressDto input consumed by applyAddress.
      */
     private void applyAddress(User user, AddressDto addressDto) {
-        if (addressDto == null) return;
         Country country = resolveCountry(addressDto.countryIsoCode());
         if (user.getAddress() == null) {
             Address address = new Address(
@@ -696,7 +599,6 @@ public class UserManagementService {
                 user.getId(),
                 user.getEmail(),
                 user.isEnabled(),
-                user.isPendingDeletion(),
                 user.getRoles().stream().map(role -> role.getName()).toList()
         );
     }
@@ -717,8 +619,6 @@ public class UserManagementService {
                 user.getLastName(),
                 user.getPhoneNumber(),
                 user.isEnabled(),
-                user.isPendingDeletion(),
-                user.getDeletionRequestedAt(),
                 user.getCreatedAt()
         );
     }
@@ -739,8 +639,6 @@ public class UserManagementService {
                 user.getLastName(),
                 user.getPhoneNumber(),
                 user.isEnabled(),
-                user.isPendingDeletion(),
-                user.getDeletionRequestedAt(),
                 user.getCreatedAt(),
                 user.getUpdatedAt(),
                 user.getRoles().stream().map(role -> role.getName()).sorted().toList()
@@ -790,8 +688,6 @@ public class UserManagementService {
                 countryName,
                 countryDialCode,
                 user.isEnabled(),
-                user.isPendingDeletion(),
-                user.getDeletionRequestedAt(),
                 user.getCreatedAt()
         );
     }
@@ -839,8 +735,6 @@ public class UserManagementService {
                 countryName,
                 countryDialCode,
                 user.isEnabled(),
-                user.isPendingDeletion(),
-                user.getDeletionRequestedAt(),
                 user.getCreatedAt(),
                 user.getUpdatedAt(),
                 user.getRoles().stream().map(role -> role.getName()).sorted().toList()

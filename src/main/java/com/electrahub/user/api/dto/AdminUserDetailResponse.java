@@ -18,8 +18,6 @@ public record AdminUserDetailResponse(
         String countryName,
         String countryDialCode,
         boolean enabled,
-        boolean pendingDeletion,
-        OffsetDateTime deletionRequestedAt,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
         List<String> roles
