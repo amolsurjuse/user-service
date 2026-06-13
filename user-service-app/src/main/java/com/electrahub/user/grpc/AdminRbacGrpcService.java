@@ -1,10 +1,9 @@
 package com.electrahub.user.grpc;
 
 import com.electrahub.proto.user.v1.AdminRbacServiceGrpc;
-import com.electrahub.proto.user.v1.ReadAdminRbacPolicyRequest;
-import com.electrahub.proto.user.v1.UpdateAdminRbacPolicyRequest;
-import com.electrahub.proto.user.v1.RbacPolicyResponse;
-import com.electrahub.user.api.dto.RbacPolicyResponse;
+import com.electrahub.proto.user.v1.AdminRbacPolicyResponse;
+import com.electrahub.proto.user.v1.GetAdminPolicyRequest;
+import com.electrahub.proto.user.v1.UpdateAdminPolicyRequest;
 import com.electrahub.user.api.dto.RbacPolicyUpdateRequest;
 import com.electrahub.user.api.dto.RbacRuleRequest;
 import com.electrahub.user.service.RbacPolicyService;
@@ -28,15 +27,15 @@ public class AdminRbacGrpcService extends AdminRbacServiceGrpc.AdminRbacServiceI
     }
 
     @Override
-    public void readAdminPolicy(
-            ReadAdminRbacPolicyRequest request,
-            StreamObserver<RbacPolicyResponse> responseObserver
+    public void getAdminPolicy(
+            GetAdminPolicyRequest request,
+            StreamObserver<AdminRbacPolicyResponse> responseObserver
     ) {
         try {
             LOGGER.debug("gRPC: Reading admin RBAC policy");
 
-            RbacPolicyResponse policy = rbacPolicyService.readAdminPolicy();
-            com.electrahub.proto.user.v1.RbacPolicyResponse response = convertToProto(policy);
+            com.electrahub.user.api.dto.RbacPolicyResponse policy = rbacPolicyService.readAdminPolicy();
+            AdminRbacPolicyResponse response = convertToProto(policy);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -59,8 +58,8 @@ public class AdminRbacGrpcService extends AdminRbacServiceGrpc.AdminRbacServiceI
 
     @Override
     public void updateAdminPolicy(
-            UpdateAdminRbacPolicyRequest request,
-            StreamObserver<RbacPolicyResponse> responseObserver
+            UpdateAdminPolicyRequest request,
+            StreamObserver<AdminRbacPolicyResponse> responseObserver
     ) {
         try {
             LOGGER.debug("gRPC: Updating admin RBAC policy");
@@ -68,9 +67,9 @@ public class AdminRbacGrpcService extends AdminRbacServiceGrpc.AdminRbacServiceI
             List<RbacRuleRequest> rules = request.getRulesList().stream()
                     .map(rule -> new RbacRuleRequest(
                             rule.getName(),
+                            rule.getMethodsList(),
                             rule.getPathPattern(),
                             rule.getEffect(),
-                            rule.getMethodsList(),
                             rule.getAllowAnonymous(),
                             rule.getRequiredRolesList()
                     ))
@@ -82,8 +81,8 @@ public class AdminRbacGrpcService extends AdminRbacServiceGrpc.AdminRbacServiceI
                     rules
             );
 
-            RbacPolicyResponse policy = rbacPolicyService.updatePolicy(updateRequest);
-            com.electrahub.proto.user.v1.RbacPolicyResponse response = convertToProto(policy);
+            com.electrahub.user.api.dto.RbacPolicyResponse policy = rbacPolicyService.updatePolicy(updateRequest);
+            AdminRbacPolicyResponse response = convertToProto(policy);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -111,9 +110,10 @@ public class AdminRbacGrpcService extends AdminRbacServiceGrpc.AdminRbacServiceI
         }
     }
 
-    private com.electrahub.proto.user.v1.RbacPolicyResponse convertToProto(RbacPolicyResponse policy) {
-        var builder = com.electrahub.proto.user.v1.RbacPolicyResponse.newBuilder()
-                .setVersion(policy.version() != null ? policy.version().toString() : "")
+    private AdminRbacPolicyResponse convertToProto(com.electrahub.user.api.dto.RbacPolicyResponse policy) {
+        var builder = AdminRbacPolicyResponse.newBuilder()
+                .setPolicyKey(policy.policyKey() != null ? policy.policyKey() : "")
+                .setVersion(policy.version())
                 .setRoleHierarchy(policy.roleHierarchy() != null ? policy.roleHierarchy() : "")
                 .setDefaultDecision(policy.defaultDecision() != null ? policy.defaultDecision() : "");
 
@@ -123,14 +123,14 @@ public class AdminRbacGrpcService extends AdminRbacServiceGrpc.AdminRbacServiceI
 
         if (policy.rules() != null) {
             policy.rules().forEach(rule ->
-                    builder.addRules(com.electrahub.proto.user.v1.RbacRule.newBuilder()
-                            .setId(rule.id().toString())
+                    builder.addRules(com.electrahub.proto.user.v1.AdminRbacRule.newBuilder()
+                            .setRuleId(rule.ruleId().toString())
                             .setSortOrder(rule.sortOrder())
                             .setName(rule.name())
+                            .addAllMethods(rule.methods() != null ? rule.methods() : List.of())
                             .setPathPattern(rule.pathPattern())
                             .setEffect(rule.effect())
                             .setAllowAnonymous(rule.allowAnonymous())
-                            .addAllMethods(rule.methods() != null ? rule.methods() : List.of())
                             .addAllRequiredRoles(rule.requiredRoles() != null ? rule.requiredRoles() : List.of())
                             .build())
             );

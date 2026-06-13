@@ -1,0 +1,293 @@
+syntax = "proto3";
+
+package electrahub.subscription.v1;
+
+option java_multiple_files = true;
+option java_package = "com.electrahub.proto.subscription.v1";
+option java_outer_classname = "SubscriptionProto";
+
+import "google/protobuf/timestamp.proto";
+import "electrahub/common/v1/common.proto";
+
+// ─── Subscription Plan Service ──────────────────────────────────────────────
+
+service SubscriptionPlanService {
+  rpc CreatePlan(CreatePlanRequest) returns (SubscriptionPlanResponse);
+  rpc GetPlan(GetPlanRequest) returns (SubscriptionPlanResponse);
+  rpc ListPlans(ListPlansRequest) returns (SubscriptionPlanSearchResponse);
+}
+
+// ─── Subscription Allocation Service ────────────────────────────────────────
+
+service SubscriptionAllocationService {
+  rpc CreateAllocation(CreateAllocationRequest) returns (SubscriptionAllocationResponse);
+  rpc ListAllocations(ListAllocationsRequest) returns (ListAllocationsResponse);
+  rpc UpdateAllocationStatus(UpdateAllocationStatusRequest) returns (SubscriptionAllocationResponse);
+}
+
+// ─── Subscription Utilization Service ───────────────────────────────────────
+
+service SubscriptionUtilizationService {
+  rpc PreviewUtilization(PreviewUtilizationRequest) returns (UtilizationPreviewResponse);
+  rpc RecordUtilization(RecordUtilizationRequest) returns (SubscriptionUtilizationResponse);
+  rpc ListUtilizations(ListUtilizationsRequest) returns (ListUtilizationsResponse);
+}
+
+// ─── Subscription Audit Service ─────────────────────────────────────────────
+
+service SubscriptionAuditService {
+  rpc ListAuditLogs(ListAuditLogsRequest) returns (ListAuditLogsResponse);
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum DiscountType {
+  DISCOUNT_TYPE_UNSPECIFIED = 0;
+  DISCOUNT_TYPE_NONE = 1;
+  DISCOUNT_TYPE_PERCENTAGE = 2;
+  DISCOUNT_TYPE_FIXED_AMOUNT = 3;
+}
+
+enum AllocationType {
+  ALLOCATION_TYPE_UNSPECIFIED = 0;
+  ALLOCATION_TYPE_USER = 1;
+  ALLOCATION_TYPE_ORGANIZATION = 2;
+  ALLOCATION_TYPE_ORGANIZATION_GROUP = 3;
+}
+
+enum AllocationStatus {
+  ALLOCATION_STATUS_UNSPECIFIED = 0;
+  ALLOCATION_STATUS_ACTIVE = 1;
+  ALLOCATION_STATUS_PAUSED = 2;
+  ALLOCATION_STATUS_EXPIRED = 3;
+}
+
+enum AuditAction {
+  AUDIT_ACTION_UNSPECIFIED = 0;
+  AUDIT_ACTION_PLAN_CREATED = 1;
+  AUDIT_ACTION_PLAN_UPDATED = 2;
+  AUDIT_ACTION_ALLOCATION_CREATED = 3;
+  AUDIT_ACTION_ALLOCATION_STATUS_CHANGED = 4;
+  AUDIT_ACTION_UTILIZATION_RECORDED = 5;
+}
+
+// ─── Plan Messages ──────────────────────────────────────────────────────────
+
+message CreatePlanRequest {
+  string code = 1;
+  string name = 2;
+  string description = 3;
+  string currency_code = 4;
+  DiscountType total_fee_discount_type = 5;
+  electrahub.common.v1.DecimalValue total_fee_discount_value = 6;
+  DiscountType session_fee_discount_type = 7;
+  electrahub.common.v1.DecimalValue session_fee_discount_value = 8;
+  optional int32 default_quota_limit = 9;
+}
+
+message GetPlanRequest {
+  string plan_id = 1;
+}
+
+message ListPlansRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message SubscriptionPlanResponse {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+  string description = 4;
+  string currency_code = 5;
+  DiscountType total_fee_discount_type = 6;
+  electrahub.common.v1.DecimalValue total_fee_discount_value = 7;
+  DiscountType session_fee_discount_type = 8;
+  electrahub.common.v1.DecimalValue session_fee_discount_value = 9;
+  optional int32 default_quota_limit = 10;
+  bool active = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+}
+
+message SubscriptionPlanSearchResponse {
+  repeated SubscriptionPlanResponse items = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  int32 current_page = 5;
+  int32 total_pages = 6;
+  bool has_next = 7;
+  bool has_previous = 8;
+}
+
+// ─── Allocation Messages ────────────────────────────────────────────────────
+
+message CreateAllocationRequest {
+  string plan_id = 1;
+  AllocationType allocation_type = 2;
+  optional string user_id = 3;
+  optional string organization_id = 4;
+  optional string group_id = 5;
+  optional int32 quota_limit = 6;
+  google.protobuf.Timestamp starts_at = 7;
+  optional google.protobuf.Timestamp ends_at = 8;
+  AllocationStatus status = 9;
+  string created_by = 10;
+}
+
+message ListAllocationsRequest {
+  optional string user_id = 1;
+  optional string organization_id = 2;
+  optional string group_id = 3;
+  optional bool active_only = 4;
+}
+
+message ListAllocationsResponse {
+  repeated SubscriptionAllocationResponse allocations = 1;
+}
+
+message UpdateAllocationStatusRequest {
+  string allocation_id = 1;
+  AllocationStatus status = 2;
+  string actor = 3;
+  string reason = 4;
+}
+
+message SubscriptionAllocationResponse {
+  string id = 1;
+  string plan_id = 2;
+  string plan_code = 3;
+  string plan_name = 4;
+  string currency_code = 5;
+  AllocationType allocation_type = 6;
+  string user_id = 7;
+  string organization_id = 8;
+  string group_id = 9;
+  optional int32 quota_limit = 10;
+  optional int32 effective_quota_limit = 11;
+  int32 consumed_units = 12;
+  optional int32 remaining_quota = 13;
+  google.protobuf.Timestamp starts_at = 14;
+  optional google.protobuf.Timestamp ends_at = 15;
+  AllocationStatus status = 16;
+  string created_by = 17;
+  google.protobuf.Timestamp created_at = 18;
+  google.protobuf.Timestamp updated_at = 19;
+}
+
+// ─── Utilization Messages ───────────────────────────────────────────────────
+
+message PreviewUtilizationRequest {
+  optional string allocation_id = 1;
+  string user_id = 2;
+  optional string organization_id = 3;
+  optional string group_id = 4;
+  string session_reference = 5;
+  electrahub.common.v1.DecimalValue charging_cost = 6;
+  electrahub.common.v1.DecimalValue session_fee = 7;
+  electrahub.common.v1.DecimalValue idle_fee = 8;
+  electrahub.common.v1.DecimalValue taxes = 9;
+  optional int32 units_consumed = 10;
+}
+
+message UtilizationPreviewResponse {
+  string allocation_id = 1;
+  string plan_id = 2;
+  string plan_code = 3;
+  string plan_name = 4;
+  string currency_code = 5;
+  string user_id = 6;
+  string organization_id = 7;
+  string group_id = 8;
+  string session_reference = 9;
+  electrahub.common.v1.DecimalValue charging_cost = 10;
+  electrahub.common.v1.DecimalValue session_fee = 11;
+  electrahub.common.v1.DecimalValue idle_fee = 12;
+  electrahub.common.v1.DecimalValue taxes = 13;
+  electrahub.common.v1.DecimalValue eligible_subtotal = 14;
+  electrahub.common.v1.DecimalValue total_fee_discount_amount = 15;
+  electrahub.common.v1.DecimalValue session_fee_discount_amount = 16;
+  electrahub.common.v1.DecimalValue total_discount_amount = 17;
+  electrahub.common.v1.DecimalValue final_charge_excluding_tax = 18;
+  electrahub.common.v1.DecimalValue final_charge_including_tax = 19;
+  int32 units_consumed = 20;
+  optional int32 remaining_quota_after_use = 21;
+}
+
+message RecordUtilizationRequest {
+  optional string allocation_id = 1;
+  string user_id = 2;
+  optional string organization_id = 3;
+  optional string group_id = 4;
+  string session_reference = 5;
+  electrahub.common.v1.DecimalValue charging_cost = 6;
+  electrahub.common.v1.DecimalValue session_fee = 7;
+  electrahub.common.v1.DecimalValue idle_fee = 8;
+  electrahub.common.v1.DecimalValue taxes = 9;
+  optional int32 units_consumed = 10;
+  string note = 11;
+  string actor = 12;
+}
+
+message SubscriptionUtilizationResponse {
+  string id = 1;
+  string allocation_id = 2;
+  string plan_id = 3;
+  string plan_code = 4;
+  string plan_name = 5;
+  string currency_code = 6;
+  string user_id = 7;
+  string organization_id = 8;
+  string group_id = 9;
+  string session_reference = 10;
+  electrahub.common.v1.DecimalValue charging_cost = 11;
+  electrahub.common.v1.DecimalValue session_fee = 12;
+  electrahub.common.v1.DecimalValue idle_fee = 13;
+  electrahub.common.v1.DecimalValue taxes = 14;
+  electrahub.common.v1.DecimalValue eligible_subtotal = 15;
+  electrahub.common.v1.DecimalValue total_fee_discount_amount = 16;
+  electrahub.common.v1.DecimalValue session_fee_discount_amount = 17;
+  electrahub.common.v1.DecimalValue total_discount_amount = 18;
+  electrahub.common.v1.DecimalValue final_charge_excluding_tax = 19;
+  electrahub.common.v1.DecimalValue final_charge_including_tax = 20;
+  int32 units_consumed = 21;
+  optional int32 remaining_quota = 22;
+  string note = 23;
+  google.protobuf.Timestamp utilized_at = 24;
+}
+
+message ListUtilizationsRequest {
+  string user_id = 1;
+}
+
+message ListUtilizationsResponse {
+  repeated SubscriptionUtilizationResponse utilizations = 1;
+}
+
+// ─── Audit Log Messages ─────────────────────────────────────────────────────
+
+message ListAuditLogsRequest {
+  optional string plan_id = 1;
+  optional string allocation_id = 2;
+  optional string user_id = 3;
+  optional string organization_id = 4;
+  optional string group_id = 5;
+}
+
+message ListAuditLogsResponse {
+  repeated AuditLogEntry entries = 1;
+}
+
+message AuditLogEntry {
+  string id = 1;
+  string plan_id = 2;
+  string allocation_id = 3;
+  string user_id = 4;
+  string organization_id = 5;
+  string group_id = 6;
+  AuditAction action = 7;
+  string actor = 8;
+  string detail = 9;
+  google.protobuf.Timestamp created_at = 10;
+}

@@ -1,11 +1,10 @@
 package com.electrahub.user.grpc;
 
 import com.electrahub.proto.user.v1.UserServiceGrpc;
-import com.electrahub.proto.user.v1.GetUserRequest;
+import com.electrahub.proto.user.v1.GetUserProfileRequest;
 import com.electrahub.proto.user.v1.UpdateUserProfileRequest;
 import com.electrahub.proto.user.v1.UserProfileResponse;
-import com.electrahub.user.api.dto.UpdateUserProfileRequest;
-import com.electrahub.user.api.dto.UserProfileResponse;
+import com.electrahub.user.api.dto.AddressDto;
 import com.electrahub.user.api.error.NotFoundException;
 import com.electrahub.user.service.UserManagementService;
 import io.grpc.Status;
@@ -27,11 +26,11 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void getProfile(GetUserRequest request, StreamObserver<UserProfileResponse> responseObserver) {
+    public void getUserProfile(GetUserProfileRequest request, StreamObserver<UserProfileResponse> responseObserver) {
         try {
             LOGGER.debug("gRPC: Getting profile for user: {}", request.getUserId());
 
-            com.electrahub.user.api.dto.UserProfileResponse profile = userManagementService.getUserProfile(
+            com.electrahub.user.api.dto.UserProfileResponse profile = userManagementService.getProfile(
                     UUID.fromString(request.getUserId())
             );
 
@@ -63,7 +62,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void updateProfile(
+    public void updateUserProfile(
             UpdateUserProfileRequest request,
             StreamObserver<UserProfileResponse> responseObserver
     ) {
@@ -74,10 +73,16 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                     new com.electrahub.user.api.dto.UpdateUserProfileRequest(
                             request.getFirstName(),
                             request.getLastName(),
-                            request.getPhoneNumber()
+                            new AddressDto(
+                                    request.getAddress().getStreet(),
+                                    request.getAddress().getCity(),
+                                    request.getAddress().getState(),
+                                    request.getAddress().getPostalCode(),
+                                    request.getAddress().getCountryIsoCode()
+                            )
                     );
 
-            com.electrahub.user.api.dto.UserProfileResponse profile = userManagementService.updateUserProfile(
+            com.electrahub.user.api.dto.UserProfileResponse profile = userManagementService.updateProfile(
                     UUID.fromString(request.getUserId()),
                     updateRequest
             );
@@ -116,6 +121,13 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                 .setFirstName(profile.firstName() != null ? profile.firstName() : "")
                 .setLastName(profile.lastName() != null ? profile.lastName() : "")
                 .setPhoneNumber(profile.phoneNumber() != null ? profile.phoneNumber() : "")
+                .setStreet(profile.street() != null ? profile.street() : "")
+                .setCity(profile.city() != null ? profile.city() : "")
+                .setState(profile.state() != null ? profile.state() : "")
+                .setPostalCode(profile.postalCode() != null ? profile.postalCode() : "")
+                .setCountryCode(profile.countryCode() != null ? profile.countryCode() : "")
+                .setCountryName(profile.countryName() != null ? profile.countryName() : "")
+                .setCountryDialCode(profile.countryDialCode() != null ? profile.countryDialCode() : "")
                 .setEnabled(profile.enabled())
                 .build();
     }

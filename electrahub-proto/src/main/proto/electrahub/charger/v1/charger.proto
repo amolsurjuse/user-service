@@ -1,0 +1,444 @@
+syntax = "proto3";
+
+package electrahub.charger.v1;
+
+option java_multiple_files = true;
+option java_package = "com.electrahub.proto.charger.v1";
+option java_outer_classname = "ChargerProto";
+
+import "google/protobuf/timestamp.proto";
+import "electrahub/common/v1/common.proto";
+
+// ─── Charger Management Service ─────────────────────────────────────────────
+
+service ChargerManagementService {
+  rpc CreateCharger(ChargerUpsertRequest) returns (ChargerResponse);
+  rpc GetCharger(GetChargerRequest) returns (ChargerResponse);
+  rpc ListChargers(ListChargersRequest) returns (ChargerListResponse);
+  rpc UpdateCharger(ChargerUpsertRequest) returns (ChargerResponse);
+  rpc UpdateChargerStatus(UpdateChargerStatusRequest) returns (ChargerResponse);
+  rpc DeleteCharger(DeleteChargerRequest) returns (DeleteChargerResponse);
+  rpc GetChargerSettings(GetChargerSettingsRequest) returns (ChargerSettingsResponse);
+}
+
+// ─── Charger Admin Service ──────────────────────────────────────────────────
+
+service ChargerAdminService {
+  // Enterprises
+  rpc ListEnterprises(ListEnterprisesRequest) returns (PagedEnterprisesResponse);
+  rpc CreateEnterprise(CreateEnterpriseRequest) returns (EnterpriseResponse);
+
+  // Networks
+  rpc ListNetworks(ListNetworksRequest) returns (PagedNetworksResponse);
+  rpc CreateNetwork(CreateNetworkRequest) returns (NetworkResponse);
+
+  // Locations
+  rpc ListLocations(ListLocationsRequest) returns (PagedLocationsResponse);
+  rpc CreateLocation(CreateLocationRequest) returns (LocationResponse);
+
+  // Admin Chargers
+  rpc ListAdminChargers(ListAdminChargersRequest) returns (PagedAdminChargersResponse);
+  rpc CreateAdminCharger(CreateAdminChargerRequest) returns (AdminChargerResponse);
+
+  // EVSEs
+  rpc ListEvses(ListEvsesRequest) returns (PagedEvsesResponse);
+  rpc CreateEvse(CreateEvseRequest) returns (EvseResponse);
+
+  // Connectors
+  rpc ListConnectors(ListConnectorsRequest) returns (PagedConnectorsResponse);
+  rpc CreateConnector(CreateConnectorRequest) returns (ConnectorResponse);
+
+  // Search index
+  rpc PublishEvseSearchIndex(PublishEvseSearchIndexRequest) returns (PublishEvseSearchIndexResponse);
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum OcppVersion {
+  OCPP_VERSION_UNSPECIFIED = 0;
+  OCPP_VERSION_16J = 1;
+  OCPP_VERSION_201 = 2;
+}
+
+enum ChargerStatus {
+  CHARGER_STATUS_UNSPECIFIED = 0;
+  CHARGER_STATUS_PROVISIONING = 1;
+  CHARGER_STATUS_AVAILABLE = 2;
+  CHARGER_STATUS_CHARGING = 3;
+  CHARGER_STATUS_FAULTED = 4;
+  CHARGER_STATUS_MAINTENANCE = 5;
+  CHARGER_STATUS_OFFLINE = 6;
+  CHARGER_STATUS_DECOMMISSIONED = 7;
+}
+
+enum ConnectorStatus {
+  CONNECTOR_STATUS_UNSPECIFIED = 0;
+  CONNECTOR_STATUS_AVAILABLE = 1;
+  CONNECTOR_STATUS_PREPARING = 2;
+  CONNECTOR_STATUS_CHARGING = 3;
+  CONNECTOR_STATUS_SUSPENDED_EV = 4;
+  CONNECTOR_STATUS_SUSPENDED_EVSE = 5;
+  CONNECTOR_STATUS_FINISHING = 6;
+  CONNECTOR_STATUS_UNAVAILABLE = 7;
+  CONNECTOR_STATUS_FAULTED = 8;
+}
+
+// ─── Charger Management Messages ────────────────────────────────────────────
+
+message ChargerUpsertRequest {
+  string charger_id = 1;
+  string display_name = 2;
+  string charge_point_identity = 3;
+  string vendor = 4;
+  string model = 5;
+  string serial_number = 6;
+  string site_name = 7;
+  OcppVersion ocpp_version = 8;
+  ChargerStatus status = 9;
+  optional bool enabled = 10;
+  optional google.protobuf.Timestamp last_heartbeat_at = 11;
+  repeated ConnectorConfiguration connectors = 12;
+  map<string, string> metadata = 13;
+}
+
+message ConnectorConfiguration {
+  int32 connector_id = 1;
+  string type = 2;
+  electrahub.common.v1.DecimalValue max_power_kw = 3;
+  ConnectorStatus status = 4;
+  optional bool cable_attached = 5;
+  optional bool supports_plug_and_charge = 6;
+  string meter_phase_map = 7;
+}
+
+message GetChargerRequest {
+  string charger_id = 1;
+}
+
+message ListChargersRequest {
+  optional string status = 1;
+  optional string ocpp_version = 2;
+  optional string site_name = 3;
+  optional bool enabled = 4;
+}
+
+message ChargerResponse {
+  string charger_id = 1;
+  string display_name = 2;
+  string charge_point_identity = 3;
+  string vendor = 4;
+  string model = 5;
+  string serial_number = 6;
+  string site_name = 7;
+  OcppVersion ocpp_version = 8;
+  ChargerStatus status = 9;
+  bool enabled = 10;
+  string firmware_version = 11;
+  google.protobuf.Timestamp last_heartbeat_at = 12;
+  repeated ConnectorConfiguration connectors = 13;
+  map<string, string> metadata = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+}
+
+message ChargerListResponse {
+  repeated ChargerSummary items = 1;
+}
+
+message ChargerSummary {
+  string charger_id = 1;
+  string display_name = 2;
+  string charge_point_identity = 3;
+  string site_name = 4;
+  OcppVersion ocpp_version = 5;
+  ChargerStatus status = 6;
+  bool enabled = 7;
+  string firmware_version = 8;
+  google.protobuf.Timestamp last_heartbeat_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message UpdateChargerStatusRequest {
+  string charger_id = 1;
+  ChargerStatus status = 2;
+  optional bool enabled = 3;
+  optional google.protobuf.Timestamp last_heartbeat_at = 4;
+}
+
+message DeleteChargerRequest {
+  string charger_id = 1;
+}
+
+message DeleteChargerResponse {}
+
+message GetChargerSettingsRequest {
+  string charger_id = 1;
+}
+
+message ChargerSettingsResponse {
+  // Settings are returned as a JSON string to avoid deeply nested proto definitions
+  // for the many charger configuration sub-objects
+  string settings_json = 1;
+}
+
+// ─── Admin Messages ─────────────────────────────────────────────────────────
+
+// Common paged request fields
+message PagedSearchRequest {
+  string search = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+// Enterprise
+message ListEnterprisesRequest {
+  string search = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message CreateEnterpriseRequest {
+  string name = 1;
+  string country_code = 2;
+  string party_id = 3;
+  string timezone = 4;
+  optional bool enabled = 5;
+}
+
+message EnterpriseResponse {
+  string id = 1;
+  string name = 2;
+  string country_code = 3;
+  string party_id = 4;
+  string timezone = 5;
+  bool enabled = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message PagedEnterprisesResponse {
+  repeated EnterpriseResponse items = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  int32 current_page = 5;
+  int32 total_pages = 6;
+  bool has_next = 7;
+  bool has_previous = 8;
+}
+
+// Network
+message ListNetworksRequest {
+  string search = 1;
+  string enterprise_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message CreateNetworkRequest {
+  string enterprise_id = 1;
+  string name = 2;
+  string region = 3;
+  string operator_email = 4;
+  optional bool enabled = 5;
+}
+
+message NetworkResponse {
+  string id = 1;
+  string enterprise_id = 2;
+  string name = 3;
+  string region = 4;
+  string operator_email = 5;
+  bool enabled = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message PagedNetworksResponse {
+  repeated NetworkResponse items = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  int32 current_page = 5;
+  int32 total_pages = 6;
+  bool has_next = 7;
+  bool has_previous = 8;
+}
+
+// Location
+message ListLocationsRequest {
+  string search = 1;
+  string network_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message CreateLocationRequest {
+  string network_id = 1;
+  string name = 2;
+  string city = 3;
+  string address = 4;
+  string ocpi_location_id = 5;
+  optional bool enabled = 6;
+}
+
+message LocationResponse {
+  string id = 1;
+  string network_id = 2;
+  string name = 3;
+  string city = 4;
+  string address = 5;
+  string ocpi_location_id = 6;
+  bool enabled = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message PagedLocationsResponse {
+  repeated LocationResponse items = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  int32 current_page = 5;
+  int32 total_pages = 6;
+  bool has_next = 7;
+  bool has_previous = 8;
+}
+
+// Admin Charger
+message ListAdminChargersRequest {
+  string search = 1;
+  string location_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message CreateAdminChargerRequest {
+  string charger_id = 1;
+  string display_name = 2;
+  string location_id = 3;
+  string model = 4;
+  OcppVersion ocpp_version = 5;
+  electrahub.common.v1.DecimalValue max_power_kw = 6;
+  optional bool enabled = 7;
+}
+
+message AdminChargerResponse {
+  string id = 1;
+  string charger_id = 2;
+  string display_name = 3;
+  string location_id = 4;
+  string model = 5;
+  OcppVersion ocpp_version = 6;
+  electrahub.common.v1.DecimalValue max_power_kw = 7;
+  bool enabled = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message PagedAdminChargersResponse {
+  repeated AdminChargerResponse items = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  int32 current_page = 5;
+  int32 total_pages = 6;
+  bool has_next = 7;
+  bool has_previous = 8;
+}
+
+// EVSE
+message ListEvsesRequest {
+  string search = 1;
+  string charger_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message CreateEvseRequest {
+  string charger_id = 1;
+  string evse_uid = 2;
+  string zone = 3;
+  string capabilities = 4;
+  optional bool enabled = 5;
+}
+
+message EvseResponse {
+  string id = 1;
+  string charger_id = 2;
+  string evse_uid = 3;
+  string zone = 4;
+  string capabilities = 5;
+  bool enabled = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message PagedEvsesResponse {
+  repeated EvseResponse items = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  int32 current_page = 5;
+  int32 total_pages = 6;
+  bool has_next = 7;
+  bool has_previous = 8;
+}
+
+// Connector
+message ListConnectorsRequest {
+  string search = 1;
+  string evse_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message CreateConnectorRequest {
+  string connector_id = 1;
+  string evse_id = 2;
+  string standard = 3;
+  string format = 4;
+  string power_type = 5;
+  electrahub.common.v1.DecimalValue max_power_kw = 6;
+  repeated string ocpi_tariff_ids = 7;
+  optional bool enabled = 8;
+}
+
+message ConnectorResponse {
+  string id = 1;
+  string connector_id = 2;
+  string evse_id = 3;
+  string standard = 4;
+  string format = 5;
+  string power_type = 6;
+  electrahub.common.v1.DecimalValue max_power_kw = 7;
+  repeated string ocpi_tariff_ids = 8;
+  bool enabled = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message PagedConnectorsResponse {
+  repeated ConnectorResponse items = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  int32 current_page = 5;
+  int32 total_pages = 6;
+  bool has_next = 7;
+  bool has_previous = 8;
+}
+
+// Search publish
+message PublishEvseSearchIndexRequest {
+  optional bool recreate_index = 1;
+}
+
+message PublishEvseSearchIndexResponse {
+  string index_name = 1;
+  int64 total_evses = 2;
+  int64 indexed_evses = 3;
+  int64 failed_evses = 4;
+  google.protobuf.Timestamp published_at = 5;
+  repeated string warnings = 6;
+}

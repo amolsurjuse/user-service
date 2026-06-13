@@ -14,8 +14,10 @@ Electra Hub user management service.
 
 ## Local run
 ```bash
-./mvnw spring-boot:run
+./mvnw -pl user-service-app -am spring-boot:run
 ```
+
+The root Maven build is a reactor that builds `electrahub-proto` before `user-service-app`, so the shared gRPC stubs do not need to be preinstalled in the local Maven repository.
 
 ## TeamCity pipeline
 Provision the TeamCity pipeline with:

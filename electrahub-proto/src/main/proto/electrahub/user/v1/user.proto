@@ -1,0 +1,322 @@
+syntax = "proto3";
+
+package electrahub.user.v1;
+
+option java_multiple_files = true;
+option java_package = "com.electrahub.proto.user.v1";
+option java_outer_classname = "UserProto";
+
+import "google/protobuf/timestamp.proto";
+import "electrahub/common/v1/common.proto";
+
+// ─── User Service ───────────────────────────────────────────────────────────
+
+service UserService {
+  // Register a new user (called by auth-service)
+  rpc RegisterUser(RegisterUserRequest) returns (UserPrincipalResponse);
+
+  // Authenticate a user by email/password
+  rpc AuthenticateUser(AuthenticateUserRequest) returns (UserPrincipalResponse);
+
+  // Get user principal by ID
+  rpc GetUserPrincipal(GetUserPrincipalRequest) returns (UserPrincipalResponse);
+
+  // Get full user profile
+  rpc GetUserProfile(GetUserProfileRequest) returns (UserProfileResponse);
+
+  // Update user profile
+  rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UserProfileResponse);
+
+  // Search users with pagination
+  rpc SearchUsers(SearchUsersRequest) returns (UserSearchResponse);
+
+  // Count users matching a query
+  rpc CountUsers(CountUsersRequest) returns (UserCountResponse);
+
+  // List all countries
+  rpc ListCountries(ListCountriesRequest) returns (ListCountriesResponse);
+}
+
+// ─── Admin User Service ─────────────────────────────────────────────────────
+
+service AdminUserService {
+  // Admin: search users with extended details
+  rpc AdminSearchUsers(AdminSearchUsersRequest) returns (AdminUserSearchResponse);
+
+  // Admin: get user detail
+  rpc AdminGetUserDetail(AdminGetUserDetailRequest) returns (AdminUserDetailResponse);
+
+  // Admin: update user
+  rpc AdminUpdateUser(AdminUpdateUserRequest) returns (AdminUserDetailResponse);
+
+  // Admin: reset user password
+  rpc AdminResetPassword(AdminResetPasswordRequest) returns (AdminResetPasswordResponse);
+
+  // Admin: delete user
+  rpc AdminDeleteUser(AdminDeleteUserRequest) returns (AdminDeleteUserResponse);
+}
+
+// ─── RBAC Service (internal, used by API Gateway) ───────────────────────────
+
+service RbacService {
+  // Fetch current RBAC policy snapshot (unary)
+  rpc GetPolicy(GetPolicyRequest) returns (RbacPolicyResponse);
+
+  // Stream RBAC policy updates in real-time (server streaming)
+  rpc StreamPolicy(StreamPolicyRequest) returns (stream RbacPolicyResponse);
+}
+
+// ─── Admin RBAC Service ─────────────────────────────────────────────────────
+
+service AdminRbacService {
+  // Admin: get full RBAC policy with metadata
+  rpc GetAdminPolicy(GetAdminPolicyRequest) returns (AdminRbacPolicyResponse);
+
+  // Admin: update RBAC policy
+  rpc UpdateAdminPolicy(UpdateAdminPolicyRequest) returns (AdminRbacPolicyResponse);
+}
+
+// ─── User Request/Response Messages ─────────────────────────────────────────
+
+message RegisterUserRequest {
+  string email = 1;
+  string password = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string phone_number = 5;
+  electrahub.common.v1.Address address = 6;
+}
+
+message AuthenticateUserRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message GetUserPrincipalRequest {
+  string user_id = 1;  // UUID as string
+}
+
+message UserPrincipalResponse {
+  string user_id = 1;
+  string email = 2;
+  bool enabled = 3;
+  repeated string roles = 4;
+}
+
+message GetUserProfileRequest {
+  string user_id = 1;
+}
+
+message UserProfileResponse {
+  string user_id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string phone_number = 5;
+  string street = 6;
+  string city = 7;
+  string state = 8;
+  string postal_code = 9;
+  string country_code = 10;
+  string country_name = 11;
+  string country_dial_code = 12;
+  bool enabled = 13;
+  google.protobuf.Timestamp created_at = 14;
+}
+
+message UpdateUserProfileRequest {
+  string user_id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  electrahub.common.v1.Address address = 4;
+}
+
+message SearchUsersRequest {
+  string query = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message UserSearchResponse {
+  repeated UserSummary items = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  int32 current_page = 5;
+  int32 total_pages = 6;
+  bool has_next = 7;
+  bool has_previous = 8;
+}
+
+message UserSummary {
+  string user_id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string phone_number = 5;
+  bool enabled = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message CountUsersRequest {
+  string query = 1;
+}
+
+message UserCountResponse {
+  string query = 1;
+  int64 count = 2;
+}
+
+message ListCountriesRequest {}
+
+message ListCountriesResponse {
+  repeated CountryInfo countries = 1;
+}
+
+message CountryInfo {
+  string code = 1;
+  string name = 2;
+  string dial_code = 3;
+}
+
+// ─── Admin User Messages ────────────────────────────────────────────────────
+
+message AdminSearchUsersRequest {
+  string query = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message AdminUserSearchResponse {
+  repeated AdminUserSummary items = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  int32 current_page = 5;
+  int32 total_pages = 6;
+  bool has_next = 7;
+  bool has_previous = 8;
+}
+
+message AdminUserSummary {
+  string user_id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string phone_number = 5;
+  bool enabled = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  repeated string roles = 9;
+}
+
+message AdminGetUserDetailRequest {
+  string user_id = 1;
+}
+
+message AdminUserDetailResponse {
+  string user_id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string phone_number = 5;
+  string street = 6;
+  string city = 7;
+  string state = 8;
+  string postal_code = 9;
+  string country_code = 10;
+  string country_name = 11;
+  string country_dial_code = 12;
+  bool enabled = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+  repeated string roles = 16;
+}
+
+message AdminUpdateUserRequest {
+  string user_id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string phone_number = 4;
+  bool enabled = 5;
+  electrahub.common.v1.Address address = 6;
+}
+
+message AdminResetPasswordRequest {
+  string user_id = 1;
+  string new_password = 2;
+}
+
+message AdminResetPasswordResponse {}
+
+message AdminDeleteUserRequest {
+  string user_id = 1;
+}
+
+message AdminDeleteUserResponse {}
+
+// ─── RBAC Messages ──────────────────────────────────────────────────────────
+
+message GetPolicyRequest {
+  string api_key = 1;
+}
+
+message StreamPolicyRequest {
+  string api_key = 1;
+}
+
+message RbacPolicyResponse {
+  string version = 1;
+  string role_hierarchy = 2;
+  string default_decision = 3;
+  repeated RbacRule rules = 4;
+}
+
+message RbacRule {
+  string name = 1;
+  repeated string methods = 2;
+  string path_pattern = 3;
+  string effect = 4;
+  bool allow_anonymous = 5;
+  repeated string required_roles = 6;
+}
+
+// ─── Admin RBAC Messages ────────────────────────────────────────────────────
+
+message GetAdminPolicyRequest {}
+
+message AdminRbacPolicyResponse {
+  string policy_key = 1;
+  string role_hierarchy = 2;
+  string default_decision = 3;
+  int64 version = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  repeated string available_roles = 6;
+  repeated AdminRbacRule rules = 7;
+}
+
+message AdminRbacRule {
+  string rule_id = 1;
+  int32 sort_order = 2;
+  string name = 3;
+  repeated string methods = 4;
+  string path_pattern = 5;
+  string effect = 6;
+  bool allow_anonymous = 7;
+  repeated string required_roles = 8;
+}
+
+message UpdateAdminPolicyRequest {
+  string role_hierarchy = 1;
+  string default_decision = 2;
+  repeated RbacRuleInput rules = 3;
+}
+
+message RbacRuleInput {
+  string name = 1;
+  repeated string methods = 2;
+  string path_pattern = 3;
+  string effect = 4;
+  bool allow_anonymous = 5;
+  repeated string required_roles = 6;
+}

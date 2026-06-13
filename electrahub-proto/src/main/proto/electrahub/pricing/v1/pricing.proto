@@ -1,0 +1,293 @@
+syntax = "proto3";
+
+package electrahub.pricing.v1;
+
+option java_multiple_files = true;
+option java_package = "com.electrahub.proto.pricing.v1";
+option java_outer_classname = "PricingProto";
+
+import "google/protobuf/timestamp.proto";
+import "electrahub/common/v1/common.proto";
+
+// ─── Pricing Plan Service ───────────────────────────────────────────────────
+
+service PricingPlanService {
+  rpc CreatePlan(CreatePricingPlanRequest) returns (PricingPlanResponse);
+  rpc GetPlan(GetPricingPlanRequest) returns (PricingPlanResponse);
+  rpc ListPlans(ListPricingPlansRequest) returns (ListPricingPlansResponse);
+  rpc ListPlansPaged(ListPricingPlansPagedRequest) returns (PagedPricingPlansResponse);
+  rpc ListPlansByLocation(ListPlansByLocationRequest) returns (ListPricingPlansResponse);
+  rpc GetApplicablePlan(GetApplicablePlanRequest) returns (PricingPlanResponse);
+  rpc UpdatePlan(UpdatePricingPlanRequest) returns (PricingPlanResponse);
+  rpc DeletePlan(DeletePricingPlanRequest) returns (DeletePricingPlanResponse);
+}
+
+// ─── Price Signal Service ───────────────────────────────────────────────────
+
+service PriceSignalService {
+  rpc CreateSignal(CreatePriceSignalRequest) returns (PriceSignalResponse);
+  rpc ListSignalsByLocation(ListSignalsByLocationRequest) returns (ListPriceSignalsResponse);
+  rpc GetLatestSignal(GetLatestSignalRequest) returns (PriceSignalResponse);
+}
+
+// ─── Pricing Calculation Service ────────────────────────────────────────────
+
+service PricingCalculationService {
+  rpc CalculateSessionCost(SessionCostRequest) returns (CostBreakdownResponse);
+  rpc EstimateCost(EstimateCostRequest) returns (CostEstimateResponse);
+  rpc CalculateRealtimeCost(RealtimeCostRequest) returns (RealtimeCostResponse);
+}
+
+// ─── Price History Service ──────────────────────────────────────────────────
+
+service PriceHistoryService {
+  rpc ListHistoryByPlan(ListHistoryByPlanRequest) returns (ListPriceHistoryResponse);
+  rpc ListHistoryByLocation(ListHistoryByLocationRequest) returns (PagedPriceHistoryResponse);
+}
+
+// ─── Pricing Plan Messages ──────────────────────────────────────────────────
+
+message CreatePricingPlanRequest {
+  string name = 1;
+  string description = 2;
+  string currency = 3;
+  string pricing_type = 4;
+  optional string location_id = 5;
+  optional string connector_type_id = 6;
+  optional string connector_type = 7;
+  google.protobuf.Timestamp valid_from = 8;
+  optional google.protobuf.Timestamp valid_to = 9;
+  repeated PricingComponentInput components = 10;
+}
+
+message PricingComponentInput {
+  string component_type = 1;
+  electrahub.common.v1.DecimalValue price = 2;
+  string unit = 3;
+  optional electrahub.common.v1.DecimalValue step_size = 4;
+  optional string time_of_day_start = 5;
+  optional string time_of_day_end = 6;
+}
+
+message GetPricingPlanRequest {
+  string plan_id = 1;
+}
+
+message ListPricingPlansRequest {}
+
+message ListPricingPlansPagedRequest {
+  string query = 1;
+  optional bool active = 2;
+  int32 page = 3;
+  int32 size = 4;
+}
+
+message ListPlansByLocationRequest {
+  string location_id = 1;
+}
+
+message GetApplicablePlanRequest {
+  optional string location_id = 1;
+  optional string connector_type = 2;
+}
+
+message UpdatePricingPlanRequest {
+  string plan_id = 1;
+  string name = 2;
+  string description = 3;
+  string currency = 4;
+  string pricing_type = 5;
+  optional string location_id = 6;
+  optional string connector_type_id = 7;
+  optional string connector_type = 8;
+  google.protobuf.Timestamp valid_from = 9;
+  optional google.protobuf.Timestamp valid_to = 10;
+  repeated PricingComponentInput components = 11;
+}
+
+message DeletePricingPlanRequest {
+  string plan_id = 1;
+}
+
+message DeletePricingPlanResponse {}
+
+message PricingPlanResponse {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string currency = 4;
+  string pricing_type = 5;
+  bool active = 6;
+  string location_id = 7;
+  string connector_type_id = 8;
+  string connector_type = 9;
+  google.protobuf.Timestamp valid_from = 10;
+  google.protobuf.Timestamp valid_to = 11;
+  repeated PricingComponentResponse components = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}
+
+message PricingComponentResponse {
+  string id = 1;
+  string component_type = 2;
+  electrahub.common.v1.DecimalValue price = 3;
+  string unit = 4;
+  electrahub.common.v1.DecimalValue step_size = 5;
+  string time_of_day_start = 6;
+  string time_of_day_end = 7;
+}
+
+message ListPricingPlansResponse {
+  repeated PricingPlanResponse plans = 1;
+}
+
+message PagedPricingPlansResponse {
+  repeated PricingPlanResponse items = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 size = 4;
+  int32 total_pages = 5;
+}
+
+// ─── Price Signal Messages ──────────────────────────────────────────────────
+
+message CreatePriceSignalRequest {
+  string location_id = 1;
+  string signal_type = 2;
+  electrahub.common.v1.DecimalValue value = 3;
+  string unit = 4;
+  google.protobuf.Timestamp valid_from = 5;
+  optional google.protobuf.Timestamp valid_to = 6;
+  string source = 7;
+}
+
+message PriceSignalResponse {
+  string id = 1;
+  string location_id = 2;
+  string signal_type = 3;
+  electrahub.common.v1.DecimalValue value = 4;
+  string unit = 5;
+  google.protobuf.Timestamp valid_from = 6;
+  google.protobuf.Timestamp valid_to = 7;
+  string source = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+message ListSignalsByLocationRequest {
+  string location_id = 1;
+}
+
+message ListPriceSignalsResponse {
+  repeated PriceSignalResponse signals = 1;
+}
+
+message GetLatestSignalRequest {
+  string location_id = 1;
+  string type = 2;
+}
+
+// ─── Pricing Calculation Messages ───────────────────────────────────────────
+
+message SessionCostRequest {
+  string session_id = 1;
+  string location_id = 2;
+  string connector_type = 3;
+  int64 energy_wh = 4;
+  int64 duration_seconds = 5;
+  optional int64 parking_seconds = 6;
+  google.protobuf.Timestamp start_time = 7;
+  optional google.protobuf.Timestamp end_time = 8;
+}
+
+message CostBreakdownResponse {
+  electrahub.common.v1.DecimalValue energy_cost = 1;
+  electrahub.common.v1.DecimalValue time_cost = 2;
+  electrahub.common.v1.DecimalValue parking_cost = 3;
+  electrahub.common.v1.DecimalValue flat_fee = 4;
+  electrahub.common.v1.DecimalValue reservation_fee = 5;
+  electrahub.common.v1.DecimalValue total_cost = 6;
+  string currency = 7;
+  string applied_plan_id = 8;
+  string applied_plan_name = 9;
+  repeated CostComponentBreakdown components = 10;
+}
+
+message CostComponentBreakdown {
+  string component_type = 1;
+  electrahub.common.v1.DecimalValue amount = 2;
+  string unit = 3;
+  electrahub.common.v1.DecimalValue rate = 4;
+  int64 quantity = 5;
+}
+
+message EstimateCostRequest {
+  string location_id = 1;
+  string connector_type = 2;
+  int64 target_kwh = 3;
+  int64 estimated_duration_minutes = 4;
+}
+
+message CostEstimateResponse {
+  electrahub.common.v1.DecimalValue estimated_total_cost = 1;
+  string currency = 2;
+  repeated CostComponentBreakdown breakdown = 3;
+  string note = 4;
+}
+
+message RealtimeCostRequest {
+  string session_id = 1;
+  string location_id = 2;
+  string connector_type = 3;
+  int64 energy_so_far_wh = 4;
+  int64 duration_so_far_seconds = 5;
+  optional int64 current_power_w = 6;
+  google.protobuf.Timestamp start_time = 7;
+}
+
+message RealtimeCostResponse {
+  electrahub.common.v1.DecimalValue running_cost = 1;
+  electrahub.common.v1.DecimalValue projected_total_cost = 2;
+  string currency = 3;
+  electrahub.common.v1.DecimalValue current_rate = 4;
+}
+
+// ─── Price History Messages ─────────────────────────────────────────────────
+
+message ListHistoryByPlanRequest {
+  string plan_id = 1;
+}
+
+message ListHistoryByLocationRequest {
+  string location_id = 1;
+  int32 page = 2;
+  int32 size = 3;
+}
+
+message PriceHistoryEntry {
+  string id = 1;
+  string pricing_plan_id = 2;
+  string location_id = 3;
+  string connector_type = 4;
+  electrahub.common.v1.DecimalValue energy_price = 5;
+  electrahub.common.v1.DecimalValue time_price = 6;
+  electrahub.common.v1.DecimalValue parking_price = 7;
+  electrahub.common.v1.DecimalValue flat_fee = 8;
+  string currency = 9;
+  string change_reason = 10;
+  string changed_by = 11;
+  google.protobuf.Timestamp effective_at = 12;
+  google.protobuf.Timestamp created_at = 13;
+}
+
+message ListPriceHistoryResponse {
+  repeated PriceHistoryEntry entries = 1;
+}
+
+message PagedPriceHistoryResponse {
+  repeated PriceHistoryEntry items = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 size = 4;
+  int32 total_pages = 5;
+}

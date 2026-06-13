@@ -1,4 +1,6 @@
 /target/
+/electrahub-proto/target/
+/user-service-app/target/
 /.idea/
 *.iml
 .DS_Store

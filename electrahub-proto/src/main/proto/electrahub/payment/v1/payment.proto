@@ -1,0 +1,200 @@
+syntax = "proto3";
+
+package electrahub.payment.v1;
+
+option java_multiple_files = true;
+option java_package = "com.electrahub.proto.payment.v1";
+option java_outer_classname = "PaymentProto";
+
+import "google/protobuf/timestamp.proto";
+import "electrahub/common/v1/common.proto";
+
+// ─── Payment Service ────────────────────────────────────────────────────────
+
+service PaymentService {
+  // Internal: provision a wallet account for a new user
+  rpc CreateWalletAccount(CreateWalletAccountRequest) returns (CreateWalletAccountResponse);
+
+  // Get full payment state (wallet + cards + auto-topup + recent topups)
+  rpc GetPaymentState(GetPaymentStateRequest) returns (PaymentStateResponse);
+
+  // Get wallet balance and details
+  rpc GetWallet(GetWalletRequest) returns (WalletStateResponse);
+
+  // List wallet top-ups
+  rpc ListTopUps(ListTopUpsRequest) returns (ListTopUpsResponse);
+
+  // Add a manual or auto top-up to wallet
+  rpc AddTopUp(AddTopUpRequest) returns (TopUpCreatedResponse);
+
+  // List payment cards
+  rpc ListCards(ListCardsRequest) returns (ListCardsResponse);
+
+  // Add a payment card
+  rpc AddCard(AddCardRequest) returns (PaymentCard);
+
+  // Delete a payment card
+  rpc DeleteCard(DeleteCardRequest) returns (DeleteCardResponse);
+
+  // Get auto top-up configuration
+  rpc GetAutoTopUpConfig(GetAutoTopUpConfigRequest) returns (AutoTopUpConfig);
+
+  // Update auto top-up configuration
+  rpc UpdateAutoTopUpConfig(UpdateAutoTopUpConfigRequest) returns (AutoTopUpConfig);
+
+  // Reload payment state (sync + apply auto-topup if needed)
+  rpc ReloadPaymentState(ReloadPaymentStateRequest) returns (ReloadResponse);
+}
+
+// ─── Wallet Account ─────────────────────────────────────────────────────────
+
+message CreateWalletAccountRequest {
+  string account_id = 1;
+  electrahub.common.v1.DecimalValue initial_balance = 2;
+  electrahub.common.v1.DecimalValue budget = 3;
+  string currency = 4;
+  string country_code = 5;
+}
+
+message CreateWalletAccountResponse {
+  string account_id = 1;
+  electrahub.common.v1.DecimalValue balance = 2;
+  electrahub.common.v1.DecimalValue budget = 3;
+  string currency = 4;
+  string currency_symbol = 5;
+  string country_code = 6;
+  bool created = 7;
+}
+
+// ─── Payment State ──────────────────────────────────────────────────────────
+
+message GetPaymentStateRequest {
+  string user_id = 1;
+}
+
+message PaymentStateResponse {
+  WalletStateResponse wallet = 1;
+  AutoTopUpConfig auto_top_up = 2;
+  repeated PaymentCard cards = 3;
+  repeated WalletTopUp top_ups = 4;
+  google.protobuf.Timestamp last_synced_at = 5;
+}
+
+message GetWalletRequest {
+  string user_id = 1;
+}
+
+message WalletStateResponse {
+  electrahub.common.v1.DecimalValue balance = 1;
+  electrahub.common.v1.DecimalValue budget = 2;
+  string currency = 3;
+  string currency_symbol = 4;
+  string country_code = 5;
+  repeated electrahub.common.v1.DecimalValue top_up_presets = 6;
+}
+
+// ─── Top-Ups ────────────────────────────────────────────────────────────────
+
+message ListTopUpsRequest {
+  string user_id = 1;
+  int32 limit = 2;
+}
+
+message ListTopUpsResponse {
+  repeated WalletTopUp top_ups = 1;
+}
+
+message AddTopUpRequest {
+  string user_id = 1;
+  electrahub.common.v1.DecimalValue amount = 2;
+  TopUpSource source = 3;
+  string note = 4;
+}
+
+message TopUpCreatedResponse {
+  WalletTopUp top_up = 1;
+  electrahub.common.v1.DecimalValue wallet_balance = 2;
+}
+
+message WalletTopUp {
+  string id = 1;
+  electrahub.common.v1.DecimalValue amount = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  TopUpSource source = 4;
+  string note = 5;
+}
+
+enum TopUpSource {
+  TOP_UP_SOURCE_UNSPECIFIED = 0;
+  TOP_UP_SOURCE_MANUAL = 1;
+  TOP_UP_SOURCE_AUTO = 2;
+}
+
+// ─── Payment Cards ──────────────────────────────────────────────────────────
+
+message ListCardsRequest {
+  string user_id = 1;
+}
+
+message ListCardsResponse {
+  repeated PaymentCard cards = 1;
+}
+
+message AddCardRequest {
+  string user_id = 1;
+  string brand = 2;
+  string nickname = 3;
+  string card_number = 4;
+  string expiry = 5;
+}
+
+message PaymentCard {
+  string id = 1;
+  string brand = 2;
+  string nickname = 3;
+  string last4 = 4;
+  string expiry = 5;
+}
+
+message DeleteCardRequest {
+  string user_id = 1;
+  string card_id = 2;
+}
+
+message DeleteCardResponse {
+  string card_id = 1;
+  bool deleted = 2;
+}
+
+// ─── Auto Top-Up ────────────────────────────────────────────────────────────
+
+message GetAutoTopUpConfigRequest {
+  string user_id = 1;
+}
+
+message UpdateAutoTopUpConfigRequest {
+  string user_id = 1;
+  bool enabled = 2;
+  electrahub.common.v1.DecimalValue threshold = 3;
+  electrahub.common.v1.DecimalValue amount = 4;
+  string card_id = 5;
+}
+
+message AutoTopUpConfig {
+  bool enabled = 1;
+  electrahub.common.v1.DecimalValue threshold = 2;
+  electrahub.common.v1.DecimalValue amount = 3;
+  string card_id = 4;
+}
+
+// ─── Reload ─────────────────────────────────────────────────────────────────
+
+message ReloadPaymentStateRequest {
+  string user_id = 1;
+}
+
+message ReloadResponse {
+  google.protobuf.Timestamp last_synced_at = 1;
+  bool auto_top_up_applied = 2;
+  PaymentStateResponse state = 3;
+}

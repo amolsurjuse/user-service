@@ -1,7 +1,7 @@
 package com.electrahub.user.grpc;
 
 import com.electrahub.proto.user.v1.RbacServiceGrpc;
-import com.electrahub.proto.user.v1.ReadGatewayPolicyRequest;
+import com.electrahub.proto.user.v1.GetPolicyRequest;
 import com.electrahub.proto.user.v1.RbacPolicyResponse;
 import com.electrahub.user.api.dto.GatewayRbacPolicyResponse;
 import com.electrahub.user.service.RbacPolicyService;
@@ -22,8 +22,8 @@ public class RbacGrpcService extends RbacServiceGrpc.RbacServiceImplBase {
     }
 
     @Override
-    public void readGatewayPolicy(
-            ReadGatewayPolicyRequest request,
+    public void getPolicy(
+            GetPolicyRequest request,
             StreamObserver<RbacPolicyResponse> responseObserver
     ) {
         try {
@@ -50,9 +50,24 @@ public class RbacGrpcService extends RbacServiceGrpc.RbacServiceImplBase {
     }
 
     private RbacPolicyResponse convertToProto(GatewayRbacPolicyResponse policy) {
-        return RbacPolicyResponse.newBuilder()
-                .setVersion(policy.version() != null ? policy.version() : "")
-                .putAllPolicies(policy.policies() != null ? policy.policies() : java.util.Map.of())
-                .build();
+        var builder = RbacPolicyResponse.newBuilder()
+                .setVersion(String.valueOf(policy.version()))
+                .setRoleHierarchy(policy.roleHierarchy() != null ? policy.roleHierarchy() : "")
+                .setDefaultDecision(policy.defaultDecision() != null ? policy.defaultDecision() : "");
+
+        if (policy.rules() != null) {
+            policy.rules().forEach(rule ->
+                    builder.addRules(com.electrahub.proto.user.v1.RbacRule.newBuilder()
+                            .setName(rule.name())
+                            .addAllMethods(rule.methods() != null ? rule.methods() : java.util.List.of())
+                            .setPathPattern(rule.pathPattern())
+                            .setEffect(rule.effect())
+                            .setAllowAnonymous(rule.allowAnonymous())
+                            .addAllRequiredRoles(rule.requiredRoles() != null ? rule.requiredRoles() : java.util.List.of())
+                            .build())
+            );
+        }
+
+        return builder.build();
     }
 }
