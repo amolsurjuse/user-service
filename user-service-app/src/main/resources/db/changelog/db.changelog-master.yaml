@@ -15,8 +15,6 @@ databaseChangeLog:
       file: db/changelog/changes/0006-add-auth-countries-public-rbac-rule.yaml
   - include:
       file: db/changelog/changes/0007-add-pricing-rbac-rules.yaml
-<<<<<<< Updated upstream
-=======
   - include:
       file: db/changelog/changes/0008-add-account-deletion-flags.yaml
   - include:
@@ -29,4 +27,3 @@ databaseChangeLog:
       file: db/changelog/changes/0012-add-notification-contact-rbac-rule.yaml
   - include:
       file: db/changelog/changes/0013-add-billing-admin-rbac-rule.yaml
->>>>>>> Stashed changes
