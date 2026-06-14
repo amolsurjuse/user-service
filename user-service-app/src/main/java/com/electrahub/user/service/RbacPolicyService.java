@@ -57,9 +57,9 @@ public class RbacPolicyService {
      */
     @Transactional(readOnly = true)
     public RbacPolicyResponse readAdminPolicy() {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering RbacPolicyService#readAdminPolicy");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering RbacPolicyService#readAdminPolicy with debug context");
         RbacPolicy policy = loadPolicyRequired();
+        LOGGER.info("Loaded admin RBAC policy key={} version={} rules={}",
+                policy.getPolicyKey(), policy.getVersion(), policy.getRules().size());
         return toAdminResponse(policy);
     }
 
@@ -73,6 +73,8 @@ public class RbacPolicyService {
      */
     @Transactional
     public RbacPolicyResponse updatePolicy(RbacPolicyUpdateRequest request) {
+        LOGGER.info("Updating RBAC policy key={} with {} incoming rules and defaultDecision={}",
+                rbacSyncProperties.getPolicyKey(), request.rules() == null ? 0 : request.rules().size(), request.defaultDecision());
         RbacPolicy policy = loadOrCreatePolicy();
         String normalizedHierarchy = normalizeText(request.roleHierarchy());
         if (normalizedHierarchy.isBlank()) {
@@ -94,6 +96,8 @@ public class RbacPolicyService {
 
         RbacPolicy saved = rbacPolicyRepository.saveAndFlush(policy);
         gatewayRbacCacheInvalidationClient.invalidate();
+        LOGGER.info("RBAC policy updated key={} version={} rules={} and gateway invalidation triggered",
+                saved.getPolicyKey(), saved.getVersion(), saved.getRules().size());
         return toAdminResponse(saved);
     }
 
@@ -107,6 +111,7 @@ public class RbacPolicyService {
     @Transactional(readOnly = true)
     public GatewayRbacPolicyResponse readGatewayPolicy() {
         RbacPolicy policy = loadPolicyRequired();
+        LOGGER.debug("Serving gateway RBAC policy key={} version={}", policy.getPolicyKey(), policy.getVersion());
         return toGatewayResponse(policy);
     }
 

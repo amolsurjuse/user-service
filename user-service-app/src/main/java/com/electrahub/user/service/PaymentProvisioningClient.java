@@ -25,8 +25,7 @@ public class PaymentProvisioningClient {
      * @return result produced by Value.
      */
     public PaymentProvisioningClient(@Value("${app.payment-service.base-url}") String paymentBaseUrl) {
-        log.info("CODEx_ENTRY_LOG: Entering PaymentProvisioningClient#Value");
-        log.debug("CODEx_ENTRY_LOG: Entering PaymentProvisioningClient#Value with debug context");
+        log.info("Configuring payment provisioning client with baseUrl={}", paymentBaseUrl);
         this.restClient = RestClient.builder()
                 .baseUrl(paymentBaseUrl)
                 .build();
@@ -42,6 +41,7 @@ public class PaymentProvisioningClient {
      */
     public void createWallet(String accountId, String countryCode) {
         WalletCreateRequest payload = new WalletCreateRequest(accountId, BigDecimal.ZERO, null, null, countryCode);
+        log.info("Requesting wallet provisioning for accountId={} countryCode={}", accountId, countryCode);
 
         try {
             restClient.post()
@@ -49,11 +49,14 @@ public class PaymentProvisioningClient {
                     .body(payload)
                     .retrieve()
                     .toBodilessEntity();
+            log.info("Wallet provisioning succeeded for accountId={}", accountId);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 409) {
                 log.info("Payment account already exists for accountId={}", accountId);
                 return;
             }
+            log.warn("Wallet provisioning failed for accountId={} status={} body={}",
+                    accountId, ex.getStatusCode().value(), ex.getResponseBodyAsString());
             throw ex;
         }
     }

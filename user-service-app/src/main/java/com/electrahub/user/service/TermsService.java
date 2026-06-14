@@ -6,6 +6,8 @@ import com.electrahub.user.domain.TermsAcceptance;
 import com.electrahub.user.domain.TermsVersion;
 import com.electrahub.user.repository.TermsAcceptanceRepository;
 import com.electrahub.user.repository.TermsVersionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +22,8 @@ import java.util.UUID;
 @Service
 public class TermsService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TermsService.class);
+
     private final TermsVersionRepository termsVersionRepository;
     private final TermsAcceptanceRepository termsAcceptanceRepository;
 
@@ -33,7 +37,10 @@ public class TermsService {
 
     @Transactional(readOnly = true)
     public TermsDtos.TermsVersionResponse currentTerms() {
-        return toVersionResponse(activeVersion());
+        TermsVersion active = activeVersion();
+        LOGGER.debug("Serving current terms version={} label={} active={}",
+                active.getVersionNumber(), active.getVersionLabel(), active.isActive());
+        return toVersionResponse(active);
     }
 
     @Transactional(readOnly = true)
@@ -68,6 +75,8 @@ public class TermsService {
             String userAgent
     ) {
         TermsVersion active = activeVersion();
+        LOGGER.info("Terms acceptance requested userId={} activeVersion={} deviceId={}",
+                userId, active.getVersionNumber(), request.deviceId());
         return termsAcceptanceRepository.findByUserIdAndTermsVersionId(userId, active.getId())
                 .map(existing -> new TermsDtos.TermsAcceptResponse(
                         existing.getId(),
@@ -112,6 +121,9 @@ public class TermsService {
                 now
         );
         TermsVersion saved = termsVersionRepository.save(version);
+        LOGGER.info("Published terms version={} label={} effectiveDate={} requiresReAcceptance={} byAdmin={}",
+                saved.getVersionNumber(), saved.getVersionLabel(), saved.getEffectiveDate(),
+                saved.isRequiresReAcceptance(), adminUserId);
         return toAdminVersionResponse(saved);
     }
 
@@ -121,7 +133,9 @@ public class TermsService {
                 .orElseThrow(() -> new NotFoundException("Terms version not found: " + termsVersionId));
         termsVersionRepository.findActiveForUpdate().ifPresent(TermsVersion::deactivate);
         target.activate();
-        return toAdminVersionResponse(termsVersionRepository.save(target));
+        TermsVersion saved = termsVersionRepository.save(target);
+        LOGGER.info("Activated terms version={} label={} id={}", saved.getVersionNumber(), saved.getVersionLabel(), saved.getId());
+        return toAdminVersionResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -153,9 +167,15 @@ public class TermsService {
         OffsetDateTime now = OffsetDateTime.now();
         List<TermsVersion> dueVersions = termsVersionRepository
                 .findByEffectiveDateLessThanEqualAndActiveFalseOrderByEffectiveDateAsc(now);
+        if (dueVersions.isEmpty()) {
+            LOGGER.debug("No due terms versions to activate at {}", now);
+            return;
+        }
+        LOGGER.info("Activating {} due terms version(s) at {}", dueVersions.size(), now);
         for (TermsVersion dueVersion : dueVersions) {
             termsVersionRepository.findActiveForUpdate().ifPresent(TermsVersion::deactivate);
             dueVersion.activate();
+            LOGGER.info("Activated scheduled terms version={} id={}", dueVersion.getVersionNumber(), dueVersion.getId());
         }
     }
 
@@ -182,9 +202,12 @@ public class TermsService {
         TermsAcceptance saved;
         try {
             saved = termsAcceptanceRepository.saveAndFlush(acceptance);
+            LOGGER.info("Recorded terms acceptance id={} userId={} version={}",
+                    saved.getId(), userId, saved.getTermsVersion().getVersionNumber());
         } catch (DataIntegrityViolationException ex) {
             saved = termsAcceptanceRepository.findByUserIdAndTermsVersionId(userId, active.getId())
                     .orElseThrow(() -> ex);
+            LOGGER.info("Terms acceptance already existed for userId={} version={}", userId, active.getVersionNumber());
         }
         return new TermsDtos.TermsAcceptResponse(
                 saved.getId(),

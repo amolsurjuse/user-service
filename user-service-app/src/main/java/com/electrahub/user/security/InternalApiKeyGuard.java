@@ -23,8 +23,7 @@ public class InternalApiKeyGuard {
      * @param rbacSyncProperties input consumed by InternalApiKeyGuard.
      */
     public InternalApiKeyGuard(RbacSyncProperties rbacSyncProperties) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering InternalApiKeyGuard#InternalApiKeyGuard");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering InternalApiKeyGuard#InternalApiKeyGuard with debug context");
+        LOGGER.info("Internal API key guard initialized for gateway sync endpoints");
         this.rbacSyncProperties = rbacSyncProperties;
     }
 
@@ -38,7 +37,9 @@ public class InternalApiKeyGuard {
     public void assertAuthorized(String incomingApiKey) {
         String expected = rbacSyncProperties.getInternalApiKey();
         if (expected == null || expected.isBlank() || incomingApiKey == null || !expected.equals(incomingApiKey)) {
+            LOGGER.warn("Internal API key authorization failed");
             throw new UnauthorizedException("Invalid internal API key");
         }
+        LOGGER.debug("Internal API key authorization succeeded");
     }
 }

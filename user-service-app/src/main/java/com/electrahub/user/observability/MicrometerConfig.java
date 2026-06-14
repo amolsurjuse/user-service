@@ -15,17 +15,8 @@ public class MicrometerConfig {
 
     @Bean
     public MeterFilter commonApplicationTags(
-            /**
-             * Executes value for `MicrometerConfig`.
-             *
-             * <p>Detailed behavior: follows the current implementation path and
-             * enforces component-specific rules in `com.electrahub.user.observability`.
-             * @param applicationName input consumed by Value.
-             * @return result produced by Value.
-             */
             @Value("${spring.application.name:unknown-service}") String applicationName) {
-                LOGGER.info("CODEx_ENTRY_LOG: Entering MicrometerConfig#Value");
-                LOGGER.debug("CODEx_ENTRY_LOG: Entering MicrometerConfig#Value with debug context");
+        LOGGER.info("Registering Micrometer common tag application={}", applicationName);
         return MeterFilter.commonTags(Tags.of("application", applicationName));
     }
 }

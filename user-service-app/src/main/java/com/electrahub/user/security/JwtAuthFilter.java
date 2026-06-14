@@ -32,8 +32,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
      * @param jwtService input consumed by JwtAuthFilter.
      */
     public JwtAuthFilter(JwtService jwtService) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering JwtAuthFilter#JwtAuthFilter");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering JwtAuthFilter#JwtAuthFilter with debug context");
+        LOGGER.info("JWT authentication filter initialized");
         this.jwtService = jwtService;
     }
 
@@ -51,6 +50,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             JwtService.ParsedToken parsed = jwtService.parseAndValidate(token);
             if (!jwtService.isNotExpired(parsed.exp())) {
+                LOGGER.warn("Expired JWT ignored for requestPath={}", request.getRequestURI());
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -68,9 +68,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(principal, null, authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                LOGGER.debug("JWT authenticated userId={} path={}", principal.userId(), request.getRequestURI());
             }
-        } catch (Exception ignored) {
-            // Invalid token leaves the request unauthenticated.
+        } catch (Exception ex) {
+            LOGGER.warn("JWT validation failed for requestPath={} reason={}", request.getRequestURI(), ex.getMessage());
         }
 
         filterChain.doFilter(request, response);

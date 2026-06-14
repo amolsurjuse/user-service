@@ -74,10 +74,10 @@ public class UserManagementService {
      */
     @Transactional
     public UserPrincipalResponse register(RegisterUserRequest request) {
-        LOGGER.info("CODEx_ENTRY_LOG: Entering UserManagementService#register");
-        LOGGER.debug("CODEx_ENTRY_LOG: Entering UserManagementService#register with debug context");
         String normalizedEmail = normalizeEmail(request.email());
+        LOGGER.info("Registering new user account for email={}", normalizedEmail);
         if (userRepository.existsByEmail(normalizedEmail)) {
+            LOGGER.warn("Registration rejected because email is already registered: {}", normalizedEmail);
             throw new ConflictException("Email already registered");
         }
 
@@ -98,9 +98,11 @@ public class UserManagementService {
         user.addRole(userRole);
 
         userRepository.save(user);
+        LOGGER.info("User persisted with id={} email={} roles={}", user.getId(), user.getEmail(), user.getRoles().stream().map(role -> role.getName()).toList());
 
         // Keep user creation and wallet provisioning in one business flow.
         paymentProvisioningClient.createWallet(user.getId().toString(), resolveCountryCode(user));
+        LOGGER.info("Wallet provisioning requested for userId={} countryCode={}", user.getId(), resolveCountryCode(user));
 
         return toPrincipal(user);
     }
@@ -116,16 +118,21 @@ public class UserManagementService {
     @Transactional(readOnly = true)
     public UserPrincipalResponse authenticate(AuthenticateUserRequest request) {
         String normalizedEmail = normalizeEmail(request.email());
+        LOGGER.info("Authenticating user by email={}", normalizedEmail);
         User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
         if (!user.isEnabled()) {
+            LOGGER.warn("Authentication rejected for disabled account userId={}", user.getId());
             throw new UnauthorizedException("User is disabled");
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            LOGGER.warn("Authentication rejected due to credential mismatch for email={}", normalizedEmail);
             throw new UnauthorizedException("Invalid credentials");
         }
+
+        LOGGER.info("Authentication succeeded for userId={}", user.getId());
 
         return toPrincipal(user);
     }
@@ -173,12 +180,14 @@ public class UserManagementService {
     @Transactional
     public UserProfileResponse updateProfile(UUID userId, UpdateUserProfileRequest request) {
         requireSelfOrSystemAdmin(userId);
+        LOGGER.info("Updating profile for userId={} (addressProvided={})", userId, request.address() != null);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + userId));
 
         user.setFirstName(normalizeText(request.firstName()));
         user.setLastName(normalizeText(request.lastName()));
         applyAddress(user, request.address());
+        LOGGER.info("Profile updated for userId={} country={}", userId, resolveCountryCode(user));
 
         return toProfile(user);
     }
@@ -196,7 +205,10 @@ public class UserManagementService {
     @Transactional(readOnly = true)
     public UserSearchResponse search(String query, int limit, int offset) {
         AuthenticatedUser actor = currentUser();
+        LOGGER.info("User search requested by actorId={} actorRoles={} query='{}' limit={} offset={}",
+                actor.userId(), actor.roles(), normalizeQuery(query), limit, offset);
         if (!actor.hasRole("SYSTEM_ADMIN")) {
+            LOGGER.debug("Search is scoped to caller because actor lacks SYSTEM_ADMIN role: actorId={}", actor.userId());
             return searchCurrentUser(query, limit, offset, actor.userId());
         }
 
@@ -305,6 +317,7 @@ public class UserManagementService {
     @Transactional
     public AdminUserDetailResponse updateAdminUser(UUID userId, AdminUpdateUserRequest request) {
         AuthenticatedUser actor = currentUser();
+        LOGGER.info("Admin profile update requested by actorId={} targetUserId={} enabled={}", actor.userId(), userId, request.enabled());
         if (actor.userId().equals(userId) && !request.enabled()) {
             throw new AccessDeniedException("You cannot disable your own account.");
         }
@@ -329,8 +342,10 @@ public class UserManagementService {
      */
     @Transactional
     public void resetPassword(UUID userId, AdminResetPasswordRequest request) {
+        LOGGER.warn("Administrative password reset initiated for targetUserId={}", userId);
         User user = loadUser(userId);
         user.setPasswordHash(passwordEncoder.encode(request.newPassword().trim()));
+        LOGGER.info("Administrative password reset completed for targetUserId={}", userId);
     }
 
     /**
@@ -343,6 +358,7 @@ public class UserManagementService {
     @Transactional
     public void deleteUser(UUID userId) {
         AuthenticatedUser actor = currentUser();
+        LOGGER.warn("Administrative delete requested by actorId={} targetUserId={}", actor.userId(), userId);
         if (actor.userId().equals(userId)) {
             throw new AccessDeniedException("You cannot delete your own account from the admin console.");
         }
@@ -359,6 +375,7 @@ public class UserManagementService {
         if (address != null) {
             addressRepository.delete(address);
         }
+        LOGGER.info("User deletion completed for targetUserId={}", userId);
     }
 
     /**
