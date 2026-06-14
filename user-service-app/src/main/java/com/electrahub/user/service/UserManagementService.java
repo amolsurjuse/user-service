@@ -599,7 +599,8 @@ public class UserManagementService {
                 user.getId(),
                 user.getEmail(),
                 user.isEnabled(),
-                user.getRoles().stream().map(role -> role.getName()).toList()
+                user.getRoles().stream().map(role -> role.getName()).toList(),
+                false
         );
     }
 
