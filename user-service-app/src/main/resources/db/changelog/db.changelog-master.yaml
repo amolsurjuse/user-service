@@ -23,3 +23,5 @@ databaseChangeLog:
       file: db/changelog/changes/0012-add-notification-contact-rbac-rule.yaml
   - include:
       file: db/changelog/changes/0013-add-billing-admin-rbac-rule.yaml
+  - include:
+      file: db/changelog/changes/0014-repair-admin-portal-rbac-rules.yaml
