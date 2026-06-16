@@ -13,6 +13,6 @@ public record RegisterUserRequest(
         @NotBlank String firstName,
         @NotBlank String lastName,
         @Pattern(regexp = "^\\+?[1-9]\\d{7,14}$", message = "Invalid phone number") String phoneNumber,
-        @Valid @NotNull AddressDto address
+        AddressDto address
 ) {
 }

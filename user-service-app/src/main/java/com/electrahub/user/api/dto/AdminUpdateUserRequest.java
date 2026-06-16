@@ -9,6 +9,6 @@ public record AdminUpdateUserRequest(
         @NotBlank String lastName,
         String phoneNumber,
         boolean enabled,
-        @Valid @NotNull AddressDto address
+        AddressDto address
 ) {
 }
