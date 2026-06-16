@@ -18,6 +18,7 @@ public class TermsActivationScheduler {
 
     @Scheduled(fixedDelayString = "${app.terms.activation-check-delay-ms:300000}")
     public void activateDueVersions() {
+        // TODO: MDC/trace context not propagated across this async boundary — see ElectraHub Logging Standard
         LOGGER.debug("Running scheduled terms activation check");
         termsService.activateDueVersions();
         LOGGER.debug("Scheduled terms activation check completed");
