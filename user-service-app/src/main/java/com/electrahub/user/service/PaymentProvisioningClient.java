@@ -55,8 +55,8 @@ public class PaymentProvisioningClient {
                 log.info("Payment account already exists for accountId={}", accountId);
                 return;
             }
-            log.warn("Wallet provisioning failed for accountId={} status={} body={}",
-                    accountId, ex.getStatusCode().value(), ex.getResponseBodyAsString());
+            log.error("Wallet provisioning failed for accountId={} status={} body={}",
+                    accountId, ex.getStatusCode().value(), ex.getResponseBodyAsString(), ex);
             throw ex;
         }
     }

@@ -135,6 +135,7 @@ public class RestExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex) {
+        LOGGER.error("Unhandled exception in RestExceptionHandler", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiError("INTERNAL_ERROR", ex.getMessage(), OffsetDateTime.now(), List.of()));
     }
