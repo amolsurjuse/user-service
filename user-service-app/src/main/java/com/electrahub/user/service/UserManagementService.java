@@ -11,6 +11,7 @@ import com.electrahub.user.api.dto.AdminUserSummaryResponse;
 import com.electrahub.user.api.dto.AuthenticateUserRequest;
 import com.electrahub.user.api.dto.CountryResponse;
 import com.electrahub.user.api.dto.RegisterUserRequest;
+import com.electrahub.user.api.dto.ResetUserPasswordRequest;
 import com.electrahub.user.api.dto.UpdateUserProfileRequest;
 import com.electrahub.user.api.dto.UserCountResponse;
 import com.electrahub.user.api.dto.UserProfileResponse;
@@ -149,6 +150,13 @@ public class UserManagementService {
     public UserPrincipalResponse getPrincipal(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+        return toPrincipal(user);
+    }
+
+    @Transactional(readOnly = true)
+    public UserPrincipalResponse getPrincipalByEmail(String email) {
+        User user = userRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new NotFoundException("User not found"));
         return toPrincipal(user);
     }
 
@@ -346,6 +354,13 @@ public class UserManagementService {
         User user = loadUser(userId);
         user.setPasswordHash(passwordEncoder.encode(request.newPassword().trim()));
         LOGGER.info("Administrative password reset completed for targetUserId={}", userId);
+    }
+
+    @Transactional
+    public void resetPassword(UUID userId, ResetUserPasswordRequest request) {
+        LOGGER.warn("Password reset completed through auth reset flow for targetUserId={}", userId);
+        User user = loadUser(userId);
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword().trim()));
     }
 
     /**
