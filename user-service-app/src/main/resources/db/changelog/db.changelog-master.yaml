@@ -31,3 +31,5 @@ databaseChangeLog:
       file: db/changelog/changes/0016-seed-customer-readonly-admin-roles.yaml
   - include:
       file: db/changelog/changes/0017-add-readonly-admin-gateway-rules.yaml
+  - include:
+      file: db/changelog/changes/0018-deny-readonly-admin-write-rules.yaml
