@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0016-seed-customer-readonly-admin-roles
+      author: codex
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO roles (id, name)
+              VALUES
+                ('00000000-0000-0000-0000-000000000071'::uuid, 'CUSTOMER'),
+                ('00000000-0000-0000-0000-000000000072'::uuid, 'ADMIN_READ_ONLY')
+              ON CONFLICT (name) DO NOTHING;

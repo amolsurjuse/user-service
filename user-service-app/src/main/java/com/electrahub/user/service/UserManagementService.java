@@ -97,6 +97,7 @@ public class UserManagementService {
         var userRole = roleRepository.findByName("USER")
                 .orElseThrow(() -> new IllegalStateException("Role USER not seeded"));
         user.addRole(userRole);
+        roleRepository.findByName("CUSTOMER").ifPresent(user::addRole);
 
         userRepository.save(user);
         LOGGER.info("User persisted with id={} email={} roles={}", user.getId(), user.getEmail(), user.getRoles().stream().map(role -> role.getName()).toList());
@@ -215,8 +216,8 @@ public class UserManagementService {
         AuthenticatedUser actor = currentUser();
         LOGGER.info("User search requested by actorId={} actorRoles={} query='{}' limit={} offset={}",
                 actor.userId(), actor.roles(), normalizeQuery(query), limit, offset);
-        if (!actor.hasRole("SYSTEM_ADMIN")) {
-            LOGGER.debug("Search is scoped to caller because actor lacks SYSTEM_ADMIN role: actorId={}", actor.userId());
+        if (!hasAdminReadAccess(actor)) {
+            LOGGER.debug("Search is scoped to caller because actor lacks admin read role: actorId={}", actor.userId());
             return searchCurrentUser(query, limit, offset, actor.userId());
         }
 
@@ -246,7 +247,7 @@ public class UserManagementService {
     @Transactional(readOnly = true)
     public UserCountResponse count(String query) {
         AuthenticatedUser actor = currentUser();
-        if (!actor.hasRole("SYSTEM_ADMIN")) {
+        if (!hasAdminReadAccess(actor)) {
             long total = matchesUserSearch(
                     userRepository.findById(actor.userId())
                             .orElseThrow(() -> new NotFoundException("User not found: " + actor.userId())),
@@ -545,6 +546,10 @@ public class UserManagementService {
         if (!actor.hasRole("SYSTEM_ADMIN") && !actor.userId().equals(userId)) {
             throw new AccessDeniedException("You are not allowed to access this user.");
         }
+    }
+
+    private boolean hasAdminReadAccess(AuthenticatedUser actor) {
+        return actor.hasRole("SYSTEM_ADMIN") || actor.hasRole("ADMIN_READ_ONLY");
     }
 
     /**

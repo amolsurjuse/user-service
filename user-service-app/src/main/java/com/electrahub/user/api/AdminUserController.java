@@ -28,7 +28,6 @@ import java.util.UUID;
 
 @RestController
 @Validated
-@PreAuthorize("hasRole('SYSTEM_ADMIN')")
 @RequestMapping("/api/v1/admin/users")
 public class AdminUserController {
     private static final Logger LOGGER = LoggerFactory.getLogger(AdminUserController.class);
@@ -50,6 +49,7 @@ public class AdminUserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN_READ_ONLY')")
     public AdminUserSearchResponse search(
             @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int limit,
@@ -67,11 +67,13 @@ public class AdminUserController {
      * @return result produced by detail.
      */
     @GetMapping("/{userId}")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN_READ_ONLY')")
     public AdminUserDetailResponse detail(@PathVariable UUID userId) {
         return userManagementService.getAdminUser(userId);
     }
 
     @PutMapping("/{userId}")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public AdminUserDetailResponse update(
             @PathVariable UUID userId,
             @Valid @RequestBody AdminUpdateUserRequest request
@@ -80,6 +82,7 @@ public class AdminUserController {
     }
 
     @PostMapping("/{userId}/reset-password")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resetPassword(
             @PathVariable UUID userId,
@@ -96,6 +99,7 @@ public class AdminUserController {
      * @param userId input consumed by delete.
      */
     @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID userId) {
         userManagementService.deleteUser(userId);

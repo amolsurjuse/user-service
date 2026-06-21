@@ -27,3 +27,7 @@ databaseChangeLog:
       file: db/changelog/changes/0014-repair-admin-portal-rbac-rules.yaml
   - include:
       file: db/changelog/changes/0015-align-gateway-rbac-rules.yaml
+  - include:
+      file: db/changelog/changes/0016-seed-customer-readonly-admin-roles.yaml
+  - include:
+      file: db/changelog/changes/0017-add-readonly-admin-gateway-rules.yaml
