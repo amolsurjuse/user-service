@@ -2,6 +2,7 @@ databaseChangeLog:
   - changeSet:
       id: 0016-seed-customer-readonly-admin-roles
       author: codex
+      validCheckSum: 9:9bff52c8f173388a954c83a8fd94322b
       changes:
         - sql:
             dbms: postgresql
