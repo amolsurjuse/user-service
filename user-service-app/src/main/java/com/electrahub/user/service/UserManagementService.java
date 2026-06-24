@@ -161,6 +161,17 @@ public class UserManagementService {
         return toPrincipal(user);
     }
 
+    @Transactional
+    public UserPrincipalResponse markEmailVerified(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+        if (!user.isEmailVerified()) {
+            user.markEmailVerified();
+            LOGGER.info("Email marked verified for userId={}", userId);
+        }
+        return toPrincipal(user);
+    }
+
     /**
      * Retrieves get profile for `UserManagementService`.
      *
@@ -636,6 +647,7 @@ public class UserManagementService {
                 user.getId(),
                 user.getEmail(),
                 user.isEnabled(),
+                user.isEmailVerified(),
                 user.getRoles().stream().map(role -> role.getName()).toList(),
                 false
         );
@@ -726,6 +738,7 @@ public class UserManagementService {
                 countryName,
                 countryDialCode,
                 user.isEnabled(),
+                user.isEmailVerified(),
                 user.getCreatedAt()
         );
     }

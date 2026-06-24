@@ -29,6 +29,11 @@ public class InternalPasswordController {
         userManagementService.resetPassword(userId, request);
     }
 
+    @PostMapping("/{userId}/email/verify")
+    public com.electrahub.user.api.dto.UserPrincipalResponse markEmailVerified(@PathVariable UUID userId) {
+        return userManagementService.markEmailVerified(userId);
+    }
+
     @GetMapping("/by-email/{email}/principal")
     public com.electrahub.user.api.dto.UserPrincipalResponse principalByEmail(@PathVariable String email) {
         return userManagementService.getPrincipalByEmail(email);

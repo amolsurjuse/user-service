@@ -17,6 +17,7 @@ public record UserProfileResponse(
         String countryName,
         String countryDialCode,
         boolean enabled,
+        boolean emailVerified,
         OffsetDateTime createdAt
 ) {
 }

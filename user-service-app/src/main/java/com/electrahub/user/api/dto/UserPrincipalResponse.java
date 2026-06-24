@@ -7,6 +7,7 @@ public record UserPrincipalResponse(
         UUID userId,
         String email,
         boolean enabled,
+        boolean emailVerified,
         List<String> roles,
         boolean pendingDeletion
 ) {

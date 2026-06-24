@@ -49,6 +49,9 @@ public class User {
     @Column(nullable = false)
     private boolean enabled;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -90,6 +93,7 @@ public class User {
         this.email = email.toLowerCase();
         this.passwordHash = passwordHash;
         this.enabled = enabled;
+        this.emailVerified = false;
         this.createdAt = now;
         this.updatedAt = now;
     }
@@ -191,6 +195,10 @@ public class User {
      */
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
     }
 
     /**
@@ -301,5 +309,9 @@ public class User {
      */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public void markEmailVerified() {
+        this.emailVerified = true;
     }
 }
