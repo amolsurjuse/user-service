@@ -1,0 +1,102 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0020-add-ai-support-gateway-rbac-rule
+      author: codex
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              WITH policy AS (
+                SELECT id
+                FROM rbac_policies
+                WHERE policy_key = 'gateway-default'
+              ),
+              requested_rules(rule_id, name, methods, path_pattern, effect, allow_anonymous, required_roles) AS (
+                VALUES
+                  (
+                    '00000000-0000-0000-0000-000000000901'::uuid,
+                    'ai-support-service',
+                    '*',
+                    '/ai/**',
+                    'ALLOW',
+                    false,
+                    'USER'
+                  )
+              ),
+              updated_rules AS (
+                UPDATE rbac_policy_rules existing
+                SET methods = rr.methods,
+                    path_pattern = rr.path_pattern,
+                    effect = rr.effect,
+                    allow_anonymous = rr.allow_anonymous,
+                    required_roles = rr.required_roles,
+                    updated_at = now()
+                FROM requested_rules rr
+                CROSS JOIN policy p
+                WHERE existing.policy_id = p.id
+                  AND existing.name = rr.name
+                  AND (
+                    existing.methods IS DISTINCT FROM rr.methods
+                    OR existing.path_pattern IS DISTINCT FROM rr.path_pattern
+                    OR existing.effect IS DISTINCT FROM rr.effect
+                    OR existing.allow_anonymous IS DISTINCT FROM rr.allow_anonymous
+                    OR existing.required_roles IS DISTINCT FROM rr.required_roles
+                  )
+                RETURNING existing.policy_id
+              ),
+              missing_rules AS (
+                SELECT
+                  row_number() OVER (ORDER BY rr.rule_id) AS rn,
+                  rr.*
+                FROM requested_rules rr
+                CROSS JOIN policy p
+                WHERE NOT EXISTS (
+                  SELECT 1
+                  FROM rbac_policy_rules existing
+                  WHERE existing.policy_id = p.id
+                    AND existing.name = rr.name
+                )
+              ),
+              base_sort AS (
+                SELECT p.id AS policy_id, COALESCE(MAX(r.sort_order), -1) AS max_sort_order
+                FROM policy p
+                LEFT JOIN rbac_policy_rules r ON r.policy_id = p.id
+                GROUP BY p.id
+              ),
+              inserted_rules AS (
+                INSERT INTO rbac_policy_rules (
+                  id,
+                  policy_id,
+                  sort_order,
+                  name,
+                  methods,
+                  path_pattern,
+                  effect,
+                  allow_anonymous,
+                  required_roles
+                )
+                SELECT
+                  m.rule_id,
+                  b.policy_id,
+                  b.max_sort_order + m.rn,
+                  m.name,
+                  m.methods,
+                  m.path_pattern,
+                  m.effect,
+                  m.allow_anonymous,
+                  m.required_roles
+                FROM missing_rules m
+                CROSS JOIN base_sort b
+                RETURNING policy_id
+              ),
+              touched_policy AS (
+                SELECT policy_id FROM updated_rules
+                UNION
+                SELECT policy_id FROM inserted_rules
+              )
+              UPDATE rbac_policies p
+              SET version = p.version + 1,
+                  updated_at = now()
+              WHERE p.id IN (SELECT policy_id FROM touched_policy);

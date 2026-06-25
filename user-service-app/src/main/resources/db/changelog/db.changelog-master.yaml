@@ -35,3 +35,5 @@ databaseChangeLog:
       file: db/changelog/changes/0018-deny-readonly-admin-write-rules.yaml
   - include:
       file: db/changelog/changes/0019-add-email-verification-flag.yaml
+  - include:
+      file: db/changelog/changes/0020-add-ai-support-gateway-rbac-rule.yaml
