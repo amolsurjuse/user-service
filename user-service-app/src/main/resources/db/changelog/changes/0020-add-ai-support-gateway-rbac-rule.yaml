@@ -31,8 +31,7 @@ databaseChangeLog:
                     path_pattern = rr.path_pattern,
                     effect = rr.effect,
                     allow_anonymous = rr.allow_anonymous,
-                    required_roles = rr.required_roles,
-                    updated_at = now()
+                    required_roles = rr.required_roles
                 FROM requested_rules rr
                 CROSS JOIN policy p
                 WHERE existing.policy_id = p.id
