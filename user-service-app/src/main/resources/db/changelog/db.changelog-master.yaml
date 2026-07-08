@@ -41,3 +41,5 @@ databaseChangeLog:
       file: db/changelog/changes/0021-add-notification-push-device-rbac-rules.yaml
   - include:
       file: db/changelog/changes/0022-create-user-charger-preferences.yaml
+  - include:
+      file: db/changelog/changes/0023-add-session-admin-read-rbac-rule.yaml
