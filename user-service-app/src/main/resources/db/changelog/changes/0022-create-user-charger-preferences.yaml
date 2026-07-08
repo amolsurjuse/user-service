@@ -1,0 +1,144 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0022-create-user-charger-preferences
+      author: codex
+      changes:
+        - createTable:
+            tableName: user_charger_preferences
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: station_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: station_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: address
+                  type: varchar(512)
+                  defaultValue: ""
+                  constraints:
+                    nullable: false
+              - column:
+                  name: city
+                  type: varchar(128)
+                  defaultValue: ""
+                  constraints:
+                    nullable: false
+              - column:
+                  name: state
+                  type: varchar(64)
+                  defaultValue: ""
+                  constraints:
+                    nullable: false
+              - column:
+                  name: postal_code
+                  type: varchar(32)
+                  defaultValue: ""
+                  constraints:
+                    nullable: false
+              - column:
+                  name: latitude
+                  type: numeric(11,7)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: longitude
+                  type: numeric(11,7)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  defaultValue: "AVAILABLE"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operating_hours
+                  type: varchar(128)
+              - column:
+                  name: image_url
+                  type: varchar(1024)
+              - column:
+                  name: charger_ids_json
+                  type: text
+                  defaultValue: "[]"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: connectors_json
+                  type: text
+                  defaultValue: "[]"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: favorite
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_used_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: user_charger_preferences
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_user_charger_preferences_user
+
+        - addUniqueConstraint:
+            tableName: user_charger_preferences
+            columnNames: user_id, station_id
+            constraintName: ux_user_charger_preferences_user_station
+
+        - createIndex:
+            tableName: user_charger_preferences
+            indexName: idx_user_charger_preferences_recent
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: last_used_at
+                  descending: true
+
+        - createIndex:
+            tableName: user_charger_preferences
+            indexName: idx_user_charger_preferences_favorites
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: favorite
+              - column:
+                  name: updated_at
+                  descending: true
