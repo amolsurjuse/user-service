@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import com.electrahub.user.api.dto.UserCountResponse;
 import com.electrahub.user.api.dto.UserSearchResponse;
+import com.electrahub.user.api.dto.UpdateUserProfileRequest;
 import com.electrahub.user.domain.Role;
 import com.electrahub.user.domain.User;
 import com.electrahub.user.repository.AddressRepository;
@@ -30,6 +31,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -53,6 +56,9 @@ class UserManagementServiceTest {
 
     @Mock
     private PaymentProvisioningClient paymentProvisioningClient;
+
+    @Mock
+    private UserNotificationOutbox notificationOutbox;
 
     @InjectMocks
     private UserManagementService userManagementService;
@@ -195,6 +201,25 @@ class UserManagementServiceTest {
                 .hasMessage("Not authorized to access user management.");
 
         verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    void updateProfileQueuesAnInboxEventWithoutProfileValues() {
+        UUID userId = UUID.randomUUID();
+        User user = createUser(userId, "driver.user.dev@electrahub.com", "USER");
+        setCurrentUser(userId, user.getEmail(), "USER");
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+
+        userManagementService.updateProfile(userId, new UpdateUserProfileRequest("Updated", "Driver", null));
+
+        verify(notificationOutbox).enqueue(
+                eq("USER_PROFILE_UPDATED"),
+                eq(userId),
+                argThat(payload -> payload.size() == 1
+                        && payload.containsKey("changedFields")
+                        && !payload.toString().contains("Updated")
+                        && !payload.toString().contains("Driver"))
+        );
     }
 
     /**

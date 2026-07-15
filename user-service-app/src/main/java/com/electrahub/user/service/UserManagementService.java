@@ -40,7 +40,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.UUID;
@@ -55,18 +58,21 @@ public class UserManagementService {
     private final AddressRepository addressRepository;
     private final CountryRepository countryRepository;
     private final PaymentProvisioningClient paymentProvisioningClient;
+    private final UserNotificationOutbox notificationOutbox;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public UserManagementService(UserRepository userRepository,
                                  RoleRepository roleRepository,
-                                 AddressRepository addressRepository,
-                                 CountryRepository countryRepository,
-                                 PaymentProvisioningClient paymentProvisioningClient) {
+                                  AddressRepository addressRepository,
+                                  CountryRepository countryRepository,
+                                  PaymentProvisioningClient paymentProvisioningClient,
+                                  UserNotificationOutbox notificationOutbox) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.addressRepository = addressRepository;
         this.countryRepository = countryRepository;
         this.paymentProvisioningClient = paymentProvisioningClient;
+        this.notificationOutbox = notificationOutbox;
     }
 
     /**
@@ -208,10 +214,27 @@ public class UserManagementService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + userId));
 
-        user.setFirstName(normalizeText(request.firstName()));
-        user.setLastName(normalizeText(request.lastName()));
+        String firstName = normalizeText(request.firstName());
+        String lastName = normalizeText(request.lastName());
+        List<String> changedFields = new ArrayList<>();
+        if (!Objects.equals(user.getFirstName(), firstName)) {
+            changedFields.add("firstName");
+        }
+        if (!Objects.equals(user.getLastName(), lastName)) {
+            changedFields.add("lastName");
+        }
+        if (request.address() != null) {
+            changedFields.add("address");
+        }
+
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
         applyAddress(user, request.address());
         LOGGER.info("Profile updated for userId={} country={}", userId, resolveCountryCode(user));
+
+        if (!changedFields.isEmpty()) {
+            notificationOutbox.enqueue("USER_PROFILE_UPDATED", userId, Map.of("changedFields", List.copyOf(changedFields)));
+        }
 
         return toProfile(user);
     }
@@ -370,11 +393,35 @@ public class UserManagementService {
         }
 
         User user = loadUser(userId);
-        user.setFirstName(normalizeText(request.firstName()));
-        user.setLastName(normalizeText(request.lastName()));
-        user.setPhoneNumber(normalizeText(request.phoneNumber()));
+        String firstName = normalizeText(request.firstName());
+        String lastName = normalizeText(request.lastName());
+        String phoneNumber = normalizeText(request.phoneNumber());
+        List<String> changedFields = new ArrayList<>();
+        if (!Objects.equals(user.getFirstName(), firstName)) {
+            changedFields.add("firstName");
+        }
+        if (!Objects.equals(user.getLastName(), lastName)) {
+            changedFields.add("lastName");
+        }
+        if (!Objects.equals(user.getPhoneNumber(), phoneNumber)) {
+            changedFields.add("phoneNumber");
+        }
+        if (user.isEnabled() != request.enabled()) {
+            changedFields.add("accountStatus");
+        }
+        if (request.address() != null) {
+            changedFields.add("address");
+        }
+
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setPhoneNumber(phoneNumber);
         user.setEnabled(request.enabled());
         applyAddress(user, request.address());
+
+        if (!changedFields.isEmpty()) {
+            notificationOutbox.enqueue("USER_PROFILE_UPDATED", userId, Map.of("changedFields", List.copyOf(changedFields)));
+        }
 
         return toAdminDetail(user);
     }
@@ -466,6 +513,9 @@ public class UserManagementService {
      * @param addressDto input consumed by applyAddress.
      */
     private void applyAddress(User user, AddressDto addressDto) {
+        if (addressDto == null) {
+            return;
+        }
         Country country = resolveCountry(addressDto.countryIsoCode());
         if (user.getAddress() == null) {
             Address address = new Address(

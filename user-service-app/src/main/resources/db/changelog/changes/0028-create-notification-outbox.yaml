@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0028-create-notification-outbox
+      author: codex
+      changes:
+        - createTable:
+            schemaName: user_mgmt
+            tableName: notification_outbox_event
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: aggregate_type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aggregate_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(16)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: published_at
+                  type: timestamptz
+                  constraints:
+                    nullable: true
+        - createIndex:
+            schemaName: user_mgmt
+            tableName: notification_outbox_event
+            indexName: idx_user_notification_outbox_status_created_at
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: created_at
+        - sql:
+            sql: ALTER TABLE user_mgmt.notification_outbox_event ADD CONSTRAINT ck_user_notification_outbox_status CHECK (status in ('PENDING','PUBLISHED','FAILED'));
+      rollback:
+        - dropTable:
+            schemaName: user_mgmt
+            tableName: notification_outbox_event
