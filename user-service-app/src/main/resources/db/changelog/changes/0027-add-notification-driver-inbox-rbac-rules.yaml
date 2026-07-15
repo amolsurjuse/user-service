@@ -16,7 +16,7 @@ databaseChangeLog:
               requested_rules(rule_id, name, methods, path_pattern, effect, allow_anonymous, required_roles) AS (
                 VALUES
                   (
-                    '00000000-0000-0000-0000-000000001027'::uuid,
+                    '00000000-0000-0000-0000-000000001034'::uuid,
                     'notification-driver-inbox',
                     'GET,PATCH',
                     '/notifications/api/v1/me/inbox/**',
@@ -25,7 +25,7 @@ databaseChangeLog:
                     'USER'
                   ),
                   (
-                    '00000000-0000-0000-0000-000000001028'::uuid,
+                    '00000000-0000-0000-0000-000000001035'::uuid,
                     'notification-driver-inbox-root',
                     'GET',
                     '/notifications/api/v1/me/inbox',
