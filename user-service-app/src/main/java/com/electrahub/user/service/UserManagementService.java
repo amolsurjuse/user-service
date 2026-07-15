@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import com.electrahub.user.api.dto.AddressDto;
 import com.electrahub.user.api.dto.AdminResetPasswordRequest;
 import com.electrahub.user.api.dto.AdminUpdateUserRequest;
+import com.electrahub.user.api.dto.AdminUserDirectoryEntryResponse;
 import com.electrahub.user.api.dto.AdminUserDetailResponse;
 import com.electrahub.user.api.dto.AdminUserSearchResponse;
 import com.electrahub.user.api.dto.AdminUserSummaryResponse;
@@ -38,7 +39,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 @Service
@@ -312,6 +316,27 @@ public class UserManagementService {
         int totalPages = Math.max(pageResult.getTotalPages(), total > 0 ? 1 : 0);
 
         return new AdminUserSearchResponse(items, total, safeLimit, safeOffset, page, totalPages, pageResult.hasNext(), pageResult.hasPrevious());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminUserDirectoryEntryResponse> resolveAdminUsers(Collection<UUID> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> uniqueUserIds = userIds.stream().distinct().toList();
+        if (uniqueUserIds.size() > 500) {
+            throw new IllegalArgumentException("A maximum of 500 users can be resolved at once.");
+        }
+
+        var usersById = userRepository.findByIdIn(uniqueUserIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        return uniqueUserIds.stream()
+                .map(usersById::get)
+                .filter(java.util.Objects::nonNull)
+                .map(this::toAdminDirectoryEntry)
+                .toList();
     }
 
     /**
@@ -796,6 +821,16 @@ public class UserManagementService {
                 user.isEnabled(),
                 user.getCreatedAt(),
                 user.getUpdatedAt(),
+                user.getRoles().stream().map(role -> role.getName()).sorted().toList()
+        );
+    }
+
+    private AdminUserDirectoryEntryResponse toAdminDirectoryEntry(User user) {
+        return new AdminUserDirectoryEntryResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
                 user.getRoles().stream().map(role -> role.getName()).sorted().toList()
         );
     }

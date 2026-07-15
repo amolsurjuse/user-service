@@ -119,6 +119,23 @@ class UserManagementServiceTest {
         verify(userRepository).countSearchSystemAdmins("network");
     }
 
+    @Test
+    void resolveAdminUsersLoadsRequestedDirectoryEntriesInOneRepositoryCall() {
+        UUID driverId = UUID.randomUUID();
+        UUID missingId = UUID.randomUUID();
+        User driver = createUser(driverId, "driver.user.dev@electrahub.com", "CUSTOMER", "USER");
+
+        when(userRepository.findByIdIn(List.of(driverId, missingId))).thenReturn(List.of(driver));
+
+        var response = userManagementService.resolveAdminUsers(List.of(driverId, missingId, driverId));
+
+        assertThat(response).hasSize(1);
+        assertThat(response.getFirst().userId()).isEqualTo(driverId);
+        assertThat(response.getFirst().email()).isEqualTo("driver.user.dev@electrahub.com");
+        assertThat(response.getFirst().roles()).containsExactly("CUSTOMER", "USER");
+        verify(userRepository).findByIdIn(List.of(driverId, missingId));
+    }
+
     /**
      * Executes count returns regular user count for system admin for `UserManagementServiceTest`.
      *

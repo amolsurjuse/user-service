@@ -4,7 +4,9 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import com.electrahub.user.api.dto.AdminResetPasswordRequest;
 import com.electrahub.user.api.dto.AdminUpdateUserRequest;
+import com.electrahub.user.api.dto.AdminUserDirectoryEntryResponse;
 import com.electrahub.user.api.dto.AdminUserDetailResponse;
+import com.electrahub.user.api.dto.AdminUserResolveRequest;
 import com.electrahub.user.api.dto.AdminUserSearchResponse;
 import com.electrahub.user.service.UserManagementService;
 import jakarta.validation.Valid;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -56,6 +59,12 @@ public class AdminUserController {
             @RequestParam(defaultValue = "0") @Min(0) int offset
     ) {
         return userManagementService.searchAdminUsers(query, limit, offset);
+    }
+
+    @PostMapping("/resolve")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public List<AdminUserDirectoryEntryResponse> resolve(@Valid @RequestBody AdminUserResolveRequest request) {
+        return userManagementService.resolveAdminUsers(request.userIds());
     }
 
     /**
