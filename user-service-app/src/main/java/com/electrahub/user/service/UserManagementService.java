@@ -225,6 +225,7 @@ public class UserManagementService {
     @Transactional(readOnly = true)
     public UserSearchResponse search(String query, int limit, int offset) {
         AuthenticatedUser actor = currentUser();
+        requireUserDirectoryAccess(actor);
         LOGGER.info("User search requested by actorId={} actorRoles={} query='{}' limit={} offset={}",
                 actor.userId(), actor.roles(), normalizeQuery(query), limit, offset);
         if (!hasAdminReadAccess(actor)) {
@@ -258,6 +259,7 @@ public class UserManagementService {
     @Transactional(readOnly = true)
     public UserCountResponse count(String query) {
         AuthenticatedUser actor = currentUser();
+        requireUserDirectoryAccess(actor);
         if (!hasAdminReadAccess(actor)) {
             long total = matchesUserSearch(
                     userRepository.findById(actor.userId())
@@ -560,7 +562,13 @@ public class UserManagementService {
     }
 
     private boolean hasAdminReadAccess(AuthenticatedUser actor) {
-        return actor.hasRole("SYSTEM_ADMIN") || actor.hasRole("ADMIN_READ_ONLY");
+        return actor.hasRole("SYSTEM_ADMIN");
+    }
+
+    private void requireUserDirectoryAccess(AuthenticatedUser actor) {
+        if (actor.hasRole("ADMIN_READ_ONLY") && !actor.hasRole("SYSTEM_ADMIN")) {
+            throw new AccessDeniedException("Not authorized to access user management.");
+        }
     }
 
     /**

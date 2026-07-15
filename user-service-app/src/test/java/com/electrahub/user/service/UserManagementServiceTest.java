@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -27,8 +28,10 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -153,6 +156,28 @@ class UserManagementServiceTest {
         assertThat(response.items().getFirst().email()).isEqualTo("driver.user.dev@electrahub.com");
         verify(userRepository, never()).searchRegularUsers("driver", PageRequest.of(0, 10));
         verify(userRepository, never()).searchSystemAdmins("driver", PageRequest.of(0, 10));
+    }
+
+    @Test
+    void searchRejectsReadOnlyAdminBeforeReadingUsers() {
+        setCurrentUser(UUID.randomUUID(), "readonly.admin@electrahub.com", "ADMIN_READ_ONLY", "USER");
+
+        assertThatThrownBy(() -> userManagementService.search("", 10, 0))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Not authorized to access user management.");
+
+        verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    void countRejectsReadOnlyAdminBeforeReadingUsers() {
+        setCurrentUser(UUID.randomUUID(), "readonly.admin@electrahub.com", "ADMIN_READ_ONLY", "USER");
+
+        assertThatThrownBy(() -> userManagementService.count(""))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Not authorized to access user management.");
+
+        verifyNoInteractions(userRepository);
     }
 
     /**

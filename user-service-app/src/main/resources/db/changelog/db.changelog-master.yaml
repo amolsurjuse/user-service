@@ -45,3 +45,5 @@ databaseChangeLog:
       file: db/changelog/changes/0023-add-session-admin-read-rbac-rule.yaml
   - include:
       file: db/changelog/changes/0024-add-notification-admin-inbox-rbac-rules.yaml
+  - include:
+      file: db/changelog/changes/0025-deny-readonly-admin-user-data.yaml

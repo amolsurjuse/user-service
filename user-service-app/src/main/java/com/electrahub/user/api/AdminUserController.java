@@ -49,7 +49,7 @@ public class AdminUserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN_READ_ONLY')")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public AdminUserSearchResponse search(
             @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int limit,
@@ -67,7 +67,7 @@ public class AdminUserController {
      * @return result produced by detail.
      */
     @GetMapping("/{userId}")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ADMIN_READ_ONLY')")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public AdminUserDetailResponse detail(@PathVariable UUID userId) {
         return userManagementService.getAdminUser(userId);
     }
