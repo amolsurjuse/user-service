@@ -53,3 +53,7 @@ databaseChangeLog:
       file: db/changelog/changes/0027-add-notification-driver-inbox-rbac-rules.yaml
   - include:
       file: db/changelog/changes/0028-create-notification-outbox.yaml
+  - include:
+      file: db/changelog/changes/0029-create-admin-scope-grants.yaml
+  - include:
+      file: db/changelog/changes/0030-add-scoped-admin-gateway-rbac-rules.yaml

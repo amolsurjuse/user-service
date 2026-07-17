@@ -1,0 +1,104 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0029-create-admin-scope-grants
+      author: codex
+      changes:
+        - createTable:
+            schemaName: user_mgmt
+            tableName: admin_scope_grants
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scope_type
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scope_id
+                  type: varchar(96)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: access_level
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: user_mgmt
+            baseTableName: admin_scope_grants
+            baseColumnNames: user_id
+            referencedTableSchemaName: user_mgmt
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_admin_scope_grants_user
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableSchemaName: user_mgmt
+            baseTableName: admin_scope_grants
+            baseColumnNames: created_by
+            referencedTableSchemaName: user_mgmt
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_admin_scope_grants_created_by
+            onDelete: RESTRICT
+        - addUniqueConstraint:
+            schemaName: user_mgmt
+            tableName: admin_scope_grants
+            columnNames: user_id, scope_type, scope_id
+            constraintName: uq_admin_scope_grants_user_scope
+        - createIndex:
+            schemaName: user_mgmt
+            tableName: admin_scope_grants
+            indexName: idx_admin_scope_grants_user_id
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            schemaName: user_mgmt
+            tableName: admin_scope_grants
+            indexName: idx_admin_scope_grants_scope
+            columns:
+              - column:
+                  name: scope_type
+              - column:
+                  name: scope_id
+        - sql:
+            dbms: postgresql
+            sql: |
+              ALTER TABLE user_mgmt.admin_scope_grants
+              ADD CONSTRAINT ck_admin_scope_grants_scope_type
+              CHECK (scope_type IN ('ENTERPRISE', 'NETWORK', 'LOCATION'));
+              ALTER TABLE user_mgmt.admin_scope_grants
+              ADD CONSTRAINT ck_admin_scope_grants_access_level
+              CHECK (access_level IN ('READ', 'OPERATE'));
+      rollback:
+        - dropTable:
+            schemaName: user_mgmt
+            tableName: admin_scope_grants
