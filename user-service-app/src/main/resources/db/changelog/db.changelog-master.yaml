@@ -57,3 +57,5 @@ databaseChangeLog:
       file: db/changelog/changes/0029-create-admin-scope-grants.yaml
   - include:
       file: db/changelog/changes/0030-add-scoped-admin-gateway-rbac-rules.yaml
+  - include:
+      file: db/changelog/changes/0031-deny-unscoped-subscription-admin-reads.yaml
