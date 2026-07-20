@@ -16,6 +16,7 @@ import com.electrahub.user.security.AuthenticatedUser;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,15 +38,18 @@ public class AdminScopeGrantService {
     private final AdminScopeGrantRepository grantRepository;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AdminScopeGrantService(
             AdminScopeGrantRepository grantRepository,
             UserRepository userRepository,
-            RoleRepository roleRepository
+            RoleRepository roleRepository,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.grantRepository = grantRepository;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -92,6 +96,7 @@ public class AdminScopeGrantService {
         grantRepository.saveAll(grants);
         synchronizeScopeRoles(user, grants);
         userRepository.save(user);
+        eventPublisher.publishEvent(new AdminScopeGrantsChangedEvent(userId));
 
         return toResponses(grants);
     }

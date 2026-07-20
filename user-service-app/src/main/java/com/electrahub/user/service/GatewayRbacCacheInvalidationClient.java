@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.util.UUID;
+
 @Component
 public class GatewayRbacCacheInvalidationClient {
 
@@ -40,19 +42,34 @@ public class GatewayRbacCacheInvalidationClient {
      * enforces component-specific rules in `com.electrahub.user.service`.
      */
     public void invalidate() {
+        invalidate(null);
+    }
+
+    public void invalidateAccessScope(UUID userId) {
+        invalidate(userId);
+    }
+
+    private void invalidate(UUID userId) {
         try {
             restClient.post()
-                    .uri(rbacSyncProperties.getGatewayInvalidatePath())
+                    .uri(uriBuilder -> {
+                        var builder = uriBuilder.path(rbacSyncProperties.getGatewayInvalidatePath());
+                        if (userId != null) {
+                            builder.queryParam("userId", userId);
+                        }
+                        return builder.build();
+                    })
                     .header(InternalApiKeyGuard.HEADER_NAME, rbacSyncProperties.getInternalApiKey())
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientResponseException ex) {
             HttpStatusCode statusCode = ex.getStatusCode();
-            log.warn("Gateway RBAC cache invalidation failed: status={} body={}",
+            log.warn("Gateway RBAC cache invalidation failed for userId={}: status={} body={}",
+                    userId,
                     statusCode == null ? "unknown" : statusCode.value(),
                     ex.getResponseBodyAsString());
         } catch (Exception ex) {
-            log.warn("Gateway RBAC cache invalidation failed: {}", ex.getMessage());
+            log.warn("Gateway RBAC cache invalidation failed for userId={}: {}", userId, ex.getMessage());
         }
     }
 }
