@@ -1,6 +1,13 @@
 spring:
   application:
     name: user-service
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      timeout: ${SPRING_DATA_REDIS_TIMEOUT:2s}
   datasource:
     url: ${ENV_USER_DATASOURCE_URL:jdbc:postgresql://localhost:5432/user_db}
     username: ${ENV_USER_DATASOURCE_USERNAME:appuser}
@@ -59,6 +66,8 @@ app:
     internal-api-key: ${APP_RBAC_INTERNAL_API_KEY:dev-rbac-internal-key}
     gateway-base-url: ${APP_RBAC_GATEWAY_BASE_URL:http://api-gateway:8090}
     gateway-invalidate-path: ${APP_RBAC_GATEWAY_INVALIDATE_PATH:/internal/rbac/cache/invalidate}
+    access-scope-cache-prefix: ${APP_INTERNAL_ACCESS_CONTEXT_CACHE_PREFIX:admin:access-scope:v1:}
+    access-scope-cache-generation-ttl: ${APP_INTERNAL_ACCESS_CONTEXT_CACHE_GENERATION_TTL:35d}
   terms:
     initial-version:
       enabled: ${APP_TERMS_INITIAL_VERSION_ENABLED:true}

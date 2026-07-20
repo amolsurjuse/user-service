@@ -331,11 +331,11 @@ public class UserManagementService {
         int page = safeOffset / safeLimit;
         String normalizedQuery = normalizeQuery(query);
 
-        var pageResult = userRepository.searchSystemAdmins(normalizedQuery, PageRequest.of(page, safeLimit));
+        var pageResult = userRepository.searchAdministrativeUsers(normalizedQuery, PageRequest.of(page, safeLimit));
         var items = pageResult.getContent().stream()
                 .map(this::toAdminSummary)
                 .toList();
-        long total = userRepository.countSearchSystemAdmins(normalizedQuery);
+        long total = userRepository.countSearchAdministrativeUsers(normalizedQuery);
         int totalPages = Math.max(pageResult.getTotalPages(), total > 0 ? 1 : 0);
 
         return new AdminUserSearchResponse(items, total, safeLimit, safeOffset, page, totalPages, pageResult.hasNext(), pageResult.hasPrevious());

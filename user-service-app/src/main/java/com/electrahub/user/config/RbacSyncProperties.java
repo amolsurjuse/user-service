@@ -1,5 +1,6 @@
 package com.electrahub.user.config;
 
+import java.time.Duration;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -15,6 +16,8 @@ public class RbacSyncProperties {
     private String internalApiKey = "dev-rbac-internal-key";
     private String gatewayBaseUrl = "http://api-gateway:8090";
     private String gatewayInvalidatePath = "/internal/rbac/cache/invalidate";
+    private String accessScopeCachePrefix = "admin:access-scope:v1:";
+    private Duration accessScopeCacheGenerationTtl = Duration.ofDays(35);
 
     /**
      * Retrieves get policy key for `RbacSyncProperties`.
@@ -104,5 +107,21 @@ public class RbacSyncProperties {
      */
     public void setGatewayInvalidatePath(String gatewayInvalidatePath) {
         this.gatewayInvalidatePath = gatewayInvalidatePath;
+    }
+
+    public String getAccessScopeCachePrefix() {
+        return accessScopeCachePrefix;
+    }
+
+    public void setAccessScopeCachePrefix(String accessScopeCachePrefix) {
+        this.accessScopeCachePrefix = accessScopeCachePrefix;
+    }
+
+    public Duration getAccessScopeCacheGenerationTtl() {
+        return accessScopeCacheGenerationTtl;
+    }
+
+    public void setAccessScopeCacheGenerationTtl(Duration accessScopeCacheGenerationTtl) {
+        this.accessScopeCacheGenerationTtl = accessScopeCacheGenerationTtl;
     }
 }

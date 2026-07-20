@@ -68,7 +68,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    select adminUser.id
                    from User adminUser
                    join adminUser.roles adminRole
-                   where adminRole.name = 'SYSTEM_ADMIN'
+                   where adminRole.name in ('SYSTEM_ADMIN', 'ADMIN_READ_ONLY', 'ENTERPRISE', 'NETWORK', 'LOCATION')
               )
             order by u.createdAt desc
             """)
@@ -86,7 +86,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("""
             select distinct u from User u
             join u.roles role
-            where role.name = 'SYSTEM_ADMIN'
+            where role.name in ('SYSTEM_ADMIN', 'ADMIN_READ_ONLY', 'ENTERPRISE', 'NETWORK', 'LOCATION')
               and (:query is null or :query = ''
                    or lower(u.email) like lower(concat('%', :query, '%'))
                    or lower(coalesce(u.firstName, '')) like lower(concat('%', :query, '%'))
@@ -95,15 +95,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             order by u.createdAt desc
             """)
     /**
-     * Executes search system admins for `UserRepository`.
+     * Executes search administrative users for `UserRepository`.
      *
      * <p>Detailed behavior: follows the current implementation path and
      * enforces component-specific rules in `com.electrahub.user.repository`.
-     * @param query input consumed by searchSystemAdmins.
-     * @param pageable input consumed by searchSystemAdmins.
-     * @return result produced by searchSystemAdmins.
+     * @param query input consumed by searchAdministrativeUsers.
+     * @param pageable input consumed by searchAdministrativeUsers.
+     * @return result produced by searchAdministrativeUsers.
      */
-    Page<User> searchSystemAdmins(String query, Pageable pageable);
+    Page<User> searchAdministrativeUsers(String query, Pageable pageable);
 
     @Query("""
             select count(u) from User u
@@ -134,7 +134,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    select adminUser.id
                    from User adminUser
                    join adminUser.roles adminRole
-                   where adminRole.name = 'SYSTEM_ADMIN'
+                   where adminRole.name in ('SYSTEM_ADMIN', 'ADMIN_READ_ONLY', 'ENTERPRISE', 'NETWORK', 'LOCATION')
               )
             """)
     /**
@@ -150,7 +150,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("""
             select count(distinct u) from User u
             join u.roles role
-            where role.name = 'SYSTEM_ADMIN'
+            where role.name in ('SYSTEM_ADMIN', 'ADMIN_READ_ONLY', 'ENTERPRISE', 'NETWORK', 'LOCATION')
               and (:query is null or :query = ''
                    or lower(u.email) like lower(concat('%', :query, '%'))
                    or lower(coalesce(u.firstName, '')) like lower(concat('%', :query, '%'))
@@ -158,12 +158,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    or lower(coalesce(u.phoneNumber, '')) like lower(concat('%', :query, '%')))
             """)
     /**
-     * Executes count search system admins for `UserRepository`.
+     * Executes count administrative users for `UserRepository`.
      *
      * <p>Detailed behavior: follows the current implementation path and
      * enforces component-specific rules in `com.electrahub.user.repository`.
-     * @param query input consumed by countSearchSystemAdmins.
-     * @return result produced by countSearchSystemAdmins.
+     * @param query input consumed by countSearchAdministrativeUsers.
+     * @return result produced by countSearchAdministrativeUsers.
      */
-    long countSearchSystemAdmins(String query);
+    long countSearchAdministrativeUsers(String query);
 }

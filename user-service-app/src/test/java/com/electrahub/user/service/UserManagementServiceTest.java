@@ -98,31 +98,31 @@ class UserManagementServiceTest {
         assertThat(response.total()).isEqualTo(1);
         verify(userRepository).searchRegularUsers("", PageRequest.of(0, 10));
         verify(userRepository).countSearchRegularUsers("");
-        verify(userRepository, never()).searchSystemAdmins("", PageRequest.of(0, 10));
+        verify(userRepository, never()).searchAdministrativeUsers("", PageRequest.of(0, 10));
     }
 
     /**
-     * Executes search admin users returns system admins only for `UserManagementServiceTest`.
+     * Executes search admin users returns hierarchy administrators for `UserManagementServiceTest`.
      *
      * <p>Detailed behavior: follows the current implementation path and
      * enforces component-specific rules in `com.electrahub.user.service`.
      */
     @Test
-    void searchAdminUsersReturnsSystemAdminsOnly() {
-        User adminUser = createUser("network.operator.dev@electrahub.com", "SYSTEM_ADMIN", "USER");
+    void searchAdminUsersReturnsHierarchyAdministrators() {
+        User adminUser = createUser("network.operator.dev@electrahub.com", "NETWORK");
 
-        when(userRepository.searchSystemAdmins("network", PageRequest.of(0, 10)))
+        when(userRepository.searchAdministrativeUsers("network", PageRequest.of(0, 10)))
                 .thenReturn(new PageImpl<>(List.of(adminUser), PageRequest.of(0, 10), 1));
-        when(userRepository.countSearchSystemAdmins("network")).thenReturn(1L);
+        when(userRepository.countSearchAdministrativeUsers("network")).thenReturn(1L);
 
         var response = userManagementService.searchAdminUsers("network", 10, 0);
 
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().email()).isEqualTo("network.operator.dev@electrahub.com");
-        assertThat(response.items().getFirst().roles()).contains("SYSTEM_ADMIN");
+        assertThat(response.items().getFirst().roles()).contains("NETWORK");
         assertThat(response.total()).isEqualTo(1);
-        verify(userRepository).searchSystemAdmins("network", PageRequest.of(0, 10));
-        verify(userRepository).countSearchSystemAdmins("network");
+        verify(userRepository).searchAdministrativeUsers("network", PageRequest.of(0, 10));
+        verify(userRepository).countSearchAdministrativeUsers("network");
     }
 
     @Test
@@ -178,7 +178,7 @@ class UserManagementServiceTest {
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().email()).isEqualTo("driver.user.dev@electrahub.com");
         verify(userRepository, never()).searchRegularUsers("driver", PageRequest.of(0, 10));
-        verify(userRepository, never()).searchSystemAdmins("driver", PageRequest.of(0, 10));
+        verify(userRepository, never()).searchAdministrativeUsers("driver", PageRequest.of(0, 10));
     }
 
     @Test

@@ -1,8 +1,11 @@
 package com.electrahub.user.service;
 
 import com.electrahub.user.api.dto.AdminAccessContextResponse;
+import com.electrahub.user.api.dto.AdminProvisionScopedUserRequest;
+import com.electrahub.user.api.dto.AdminProvisionScopedUserResponse;
 import com.electrahub.user.api.dto.AdminScopeGrantRequest;
 import com.electrahub.user.api.dto.AdminScopeGrantResponse;
+import com.electrahub.user.api.error.ConflictException;
 import com.electrahub.user.api.error.NotFoundException;
 import com.electrahub.user.api.error.UnauthorizedException;
 import com.electrahub.user.domain.AdminScopeGrant;
@@ -16,6 +19,7 @@ import com.electrahub.user.security.AuthenticatedUser;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +43,7 @@ public class AdminScopeGrantService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AdminScopeGrantService(
             AdminScopeGrantRepository grantRepository,
@@ -76,9 +81,47 @@ public class AdminScopeGrantService {
         if (actor.userId().equals(userId) && !actor.hasRole("SYSTEM_ADMIN")) {
             throw new AccessDeniedException("You cannot change your own administrative scope.");
         }
+        return replaceGrants(user, normalize(requestedGrants), actor);
+    }
 
-        List<AdminScopeGrantRequest> normalized = normalize(requestedGrants);
-        grantRepository.deleteByUserId(userId);
+    /**
+     * Provisions an operator account without granting driver capabilities.
+     * The invitation password is supplied by a trusted system administrator;
+     * the account is email-verified at provisioning time so it can sign in to
+     * the administrative portal immediately.
+     */
+    @Transactional
+    public AdminProvisionScopedUserResponse provisionScopedUser(AdminProvisionScopedUserRequest request) {
+        AuthenticatedUser actor = requireSystemAdmin();
+        String email = normalizeEmail(request.email());
+        if (userRepository.existsByEmail(email)) {
+            throw new ConflictException("Email already registered");
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+        User user = new User(
+                UUID.randomUUID(),
+                email,
+                passwordEncoder.encode(request.initialPassword().trim()),
+                true,
+                now
+        );
+        user.markEmailVerified();
+        user.setFirstName(request.firstName().trim());
+        user.setLastName(request.lastName().trim());
+        user.setPhoneNumber(normalizeOptional(request.phoneNumber()));
+        userRepository.save(user);
+
+        List<AdminScopeGrantResponse> grants = replaceGrants(user, normalize(request.grants()), actor);
+        return new AdminProvisionScopedUserResponse(user.getId(), user.getEmail(), grants);
+    }
+
+    private List<AdminScopeGrantResponse> replaceGrants(
+            User user,
+            List<AdminScopeGrantRequest> normalized,
+            AuthenticatedUser actor
+    ) {
+        grantRepository.deleteByUserId(user.getId());
         grantRepository.flush();
 
         OffsetDateTime now = OffsetDateTime.now();
@@ -96,9 +139,21 @@ public class AdminScopeGrantService {
         grantRepository.saveAll(grants);
         synchronizeScopeRoles(user, grants);
         userRepository.save(user);
-        eventPublisher.publishEvent(new AdminScopeGrantsChangedEvent(userId));
+        eventPublisher.publishEvent(new AdminScopeGrantsChangedEvent(user.getId()));
 
         return toResponses(grants);
+    }
+
+    private String normalizeEmail(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private List<AdminScopeGrantRequest> normalize(Collection<AdminScopeGrantRequest> requestedGrants) {
