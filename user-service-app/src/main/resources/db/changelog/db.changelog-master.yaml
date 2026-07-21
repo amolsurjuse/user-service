@@ -59,3 +59,5 @@ databaseChangeLog:
       file: db/changelog/changes/0030-add-scoped-admin-gateway-rbac-rules.yaml
   - include:
       file: db/changelog/changes/0031-deny-unscoped-subscription-admin-reads.yaml
+  - include:
+      file: db/changelog/changes/0032-repair-payment-gateway-admin-rbac-rule.yaml

@@ -28,8 +28,10 @@ import java.util.stream.Collectors;
 public class RbacPolicyService {
     private static final Logger LOGGER = LoggerFactory.getLogger(RbacPolicyService.class);
 
-
     private static final Set<String> VALID_DECISIONS = Set.of("ALLOW", "DENY");
+    private static final String PAYMENT_GATEWAY_ADMIN_RULE = "payment-gateway-admin";
+    private static final String PAYMENT_GATEWAY_ADMIN_PATH = "/payment-gateway/api/v1/gateway/admin/**";
+    private static final String LEGACY_PAYMENT_GATEWAY_ADMIN_PATH = "/gateway/admin/configuration/**";
 
     private final RbacPolicyRepository rbacPolicyRepository;
     private final RoleRepository roleRepository;
@@ -82,7 +84,7 @@ public class RbacPolicyService {
         }
 
         String normalizedDecision = normalizeDecision(request.defaultDecision());
-        List<RbacPolicyRule> rules = buildRules(request.rules());
+        List<RbacPolicyRule> rules = buildRules(reconcileSystemManagedRules(request.rules()));
 
         // Remove existing rows first to avoid unique key conflicts on (policy_id, sort_order)
         // when JPA issues inserts before orphan deletes in a single flush cycle.
@@ -217,6 +219,41 @@ public class RbacPolicyService {
         }
 
         return rules;
+    }
+
+    /**
+     * Ensures that the gateway route used to administer payment providers always
+     * remains available to system administrators. This route is part of the
+     * platform control plane, rather than a tenant-specific rule that can be
+     * accidentally removed while editing the rest of the policy.
+     */
+    private List<RbacRuleRequest> reconcileSystemManagedRules(List<RbacRuleRequest> requests) {
+        List<RbacRuleRequest> reconciled = new ArrayList<>();
+        if (requests != null) {
+            for (RbacRuleRequest request : requests) {
+                if (request != null && !isPaymentGatewayAdminRule(request)) {
+                    reconciled.add(request);
+                }
+            }
+        }
+        reconciled.add(new RbacRuleRequest(
+                PAYMENT_GATEWAY_ADMIN_RULE,
+                List.of("*"),
+                PAYMENT_GATEWAY_ADMIN_PATH,
+                "ALLOW",
+                false,
+                List.of("SYSTEM_ADMIN")
+        ));
+        return reconciled;
+    }
+
+    private boolean isPaymentGatewayAdminRule(RbacRuleRequest request) {
+        String name = normalizeText(request.name()).toLowerCase(Locale.ROOT);
+        String path = normalizeText(request.pathPattern());
+        return PAYMENT_GATEWAY_ADMIN_RULE.equalsIgnoreCase(name)
+                || "payment-gateway-read".equalsIgnoreCase(name)
+                || LEGACY_PAYMENT_GATEWAY_ADMIN_PATH.equals(path)
+                || PAYMENT_GATEWAY_ADMIN_PATH.equals(path);
     }
 
     /**
