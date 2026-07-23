@@ -18,7 +18,8 @@ public class TermsAcceptance {
     @Id
     private UUID id;
 
-    @Column(name = "user_id", nullable = false)
+    // A deleted account is deliberately detached from its immutable legal-acceptance record.
+    @Column(name = "user_id")
     private UUID userId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0033-preserve-terms-audit-on-user-deletion
+      author: codex
+      changes:
+        # Terms acceptance is an append-only legal audit record. Account deletion must not erase it,
+        # but it must release the live user row so the deletion can complete.
+        - dropForeignKeyConstraint:
+            baseTableName: terms_acceptances
+            constraintName: fk_terms_acceptances_user
+        - dropNotNullConstraint:
+            tableName: terms_acceptances
+            columnName: user_id
+            columnDataType: uuid
+        - addForeignKeyConstraint:
+            baseTableName: terms_acceptances
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_terms_acceptances_user
+            onDelete: SET NULL
+        # The FK action is the only allowed update: all acceptance facts remain immutable.
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              CREATE OR REPLACE FUNCTION user_mgmt.prevent_terms_acceptance_mutation()
+              RETURNS trigger AS $$
+              BEGIN
+                IF TG_OP = 'UPDATE'
+                  AND OLD.user_id IS NOT NULL
+                  AND NEW.user_id IS NULL
+                  AND NEW.id IS NOT DISTINCT FROM OLD.id
+                  AND NEW.terms_version_id IS NOT DISTINCT FROM OLD.terms_version_id
+                  AND NEW.accepted_at IS NOT DISTINCT FROM OLD.accepted_at
+                  AND NEW.device_id IS NOT DISTINCT FROM OLD.device_id
+                  AND NEW.device_model IS NOT DISTINCT FROM OLD.device_model
+                  AND NEW.os_version IS NOT DISTINCT FROM OLD.os_version
+                  AND NEW.app_version IS NOT DISTINCT FROM OLD.app_version
+                  AND NEW.platform IS NOT DISTINCT FROM OLD.platform
+                  AND NEW.ip_address IS NOT DISTINCT FROM OLD.ip_address
+                  AND NEW.user_agent IS NOT DISTINCT FROM OLD.user_agent
+                THEN
+                  RETURN NEW;
+                END IF;
+
+                RAISE EXCEPTION 'terms_acceptances is append-only';
+              END;
+              $$ LANGUAGE plpgsql;
+        - dropForeignKeyConstraint:
+            baseTableName: user_charger_preferences
+            constraintName: fk_user_charger_preferences_user
+        - addForeignKeyConstraint:
+            baseTableName: user_charger_preferences
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_user_charger_preferences_user
+            onDelete: CASCADE
