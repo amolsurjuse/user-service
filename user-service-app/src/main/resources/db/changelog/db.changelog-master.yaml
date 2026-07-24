@@ -63,3 +63,5 @@ databaseChangeLog:
       file: db/changelog/changes/0032-repair-payment-gateway-admin-rbac-rule.yaml
   - include:
       file: db/changelog/changes/0033-preserve-terms-audit-on-user-deletion.yaml
+  - include:
+      file: db/changelog/changes/0034-add-ocpp-connection-inventory-rbac-rule.yaml
