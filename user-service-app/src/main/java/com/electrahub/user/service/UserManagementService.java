@@ -16,6 +16,7 @@ import com.electrahub.user.api.dto.ResetUserPasswordRequest;
 import com.electrahub.user.api.dto.UpdateUserProfileRequest;
 import com.electrahub.user.api.dto.UserCountResponse;
 import com.electrahub.user.api.dto.UserProfileResponse;
+import com.electrahub.user.api.dto.BillingProfileResponse;
 import com.electrahub.user.api.dto.UserPrincipalResponse;
 import com.electrahub.user.api.dto.UserSearchResponse;
 import com.electrahub.user.api.dto.UserSummaryResponse;
@@ -198,6 +199,26 @@ public class UserManagementService {
         return toProfile(user);
     }
 
+    @Transactional(readOnly = true)
+    public BillingProfileResponse getBillingProfileInternal(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+        Address address = user.getAddress();
+        return new BillingProfileResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                address == null ? null : address.getStreet(),
+                address == null ? null : address.getCity(),
+                address == null ? null : address.getState(),
+                address == null ? null : address.getPostalCode(),
+                address == null || address.getCountry() == null ? null : address.getCountry().getIsoCode(),
+                user.getBillingLegalName(),
+                user.getTaxRegistrationNumber()
+        );
+    }
+
     /**
      * Updates update profile for `UserManagementService`.
      *
@@ -226,9 +247,22 @@ public class UserManagementService {
         if (request.address() != null) {
             changedFields.add("address");
         }
-
         user.setFirstName(firstName);
         user.setLastName(lastName);
+        if (request.billingLegalName() != null) {
+            String billingLegalName = normalizeOptionalText(request.billingLegalName());
+            if (!Objects.equals(user.getBillingLegalName(), billingLegalName)) {
+                changedFields.add("billingLegalName");
+            }
+            user.setBillingLegalName(billingLegalName);
+        }
+        if (request.taxRegistrationNumber() != null) {
+            String taxRegistrationNumber = normalizeOptionalText(request.taxRegistrationNumber());
+            if (!Objects.equals(user.getTaxRegistrationNumber(), taxRegistrationNumber)) {
+                changedFields.add("taxRegistrationNumber");
+            }
+            user.setTaxRegistrationNumber(taxRegistrationNumber);
+        }
         applyAddress(user, request.address());
         LOGGER.info("Profile updated for userId={} country={}", userId, resolveCountryCode(user));
 
@@ -563,6 +597,11 @@ public class UserManagementService {
         return value == null ? "" : value.trim();
     }
 
+    private String normalizeOptionalText(String value) {
+        String normalized = normalizeText(value);
+        return normalized.isEmpty() ? null : normalized;
+    }
+
     /**
      * Executes normalize query for `UserManagementService`.
      *
@@ -820,6 +859,8 @@ public class UserManagementService {
                 countryCode,
                 countryName,
                 countryDialCode,
+                user.getBillingLegalName(),
+                user.getTaxRegistrationNumber(),
                 user.isEnabled(),
                 user.isEmailVerified(),
                 user.getCreatedAt()

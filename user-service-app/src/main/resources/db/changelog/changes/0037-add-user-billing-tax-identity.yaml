@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0037-add-user-billing-tax-identity
+      author: codex
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column: { name: billing_legal_name, type: varchar(200) }
+              - column: { name: tax_registration_number, type: varchar(80) }

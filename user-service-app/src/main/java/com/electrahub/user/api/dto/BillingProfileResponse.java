@@ -1,25 +1,18 @@
 package com.electrahub.user.api.dto;
 
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public record UserProfileResponse(
+public record BillingProfileResponse(
         UUID userId,
         String email,
         String firstName,
         String lastName,
-        String phoneNumber,
         String street,
         String city,
         String state,
         String postalCode,
         String countryCode,
-        String countryName,
-        String countryDialCode,
         String billingLegalName,
-        String taxRegistrationNumber,
-        boolean enabled,
-        boolean emailVerified,
-        OffsetDateTime createdAt
+        String taxRegistrationNumber
 ) {
 }

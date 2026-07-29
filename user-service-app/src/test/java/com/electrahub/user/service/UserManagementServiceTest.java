@@ -222,6 +222,47 @@ class UserManagementServiceTest {
         );
     }
 
+    @Test
+    void updateProfilePreservesBillingIdentityWhenLegacyClientOmitsFields() {
+        UUID userId = UUID.randomUUID();
+        User user = createUser(userId, "driver.user.dev@electrahub.com", "USER");
+        user.setBillingLegalName("Example Fleet LLC");
+        user.setTaxRegistrationNumber("US-TAX-123");
+        setCurrentUser(userId, user.getEmail(), "USER");
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+
+        var response = userManagementService.updateProfile(
+                userId,
+                new UpdateUserProfileRequest("Updated", "Driver", null)
+        );
+
+        assertThat(response.billingLegalName()).isEqualTo("Example Fleet LLC");
+        assertThat(response.taxRegistrationNumber()).isEqualTo("US-TAX-123");
+    }
+
+    @Test
+    void updateProfileUpdatesAndClearsOptionalBillingIdentity() {
+        UUID userId = UUID.randomUUID();
+        User user = createUser(userId, "driver.user.dev@electrahub.com", "USER");
+        setCurrentUser(userId, user.getEmail(), "USER");
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+
+        var updated = userManagementService.updateProfile(
+                userId,
+                new UpdateUserProfileRequest("Updated", "Driver", null, "Example Fleet LLC", "IN27ABCDE1234F1Z5")
+        );
+
+        assertThat(updated.billingLegalName()).isEqualTo("Example Fleet LLC");
+        assertThat(updated.taxRegistrationNumber()).isEqualTo("IN27ABCDE1234F1Z5");
+
+        var cleared = userManagementService.updateProfile(
+                userId,
+                new UpdateUserProfileRequest("Updated", "Driver", null, "", "")
+        );
+        assertThat(cleared.billingLegalName()).isNull();
+        assertThat(cleared.taxRegistrationNumber()).isNull();
+    }
+
     /**
      * Updates set current user for `UserManagementServiceTest`.
      *

@@ -69,3 +69,5 @@ databaseChangeLog:
       file: db/changelog/changes/0035-add-communication-preferences-rbac-rules.yaml
   - include:
       file: db/changelog/changes/0036-add-pricing-tax-admin-rbac-rule.yaml
+  - include:
+      file: db/changelog/changes/0037-add-user-billing-tax-identity.yaml

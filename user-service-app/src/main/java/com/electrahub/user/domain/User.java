@@ -42,6 +42,12 @@ public class User {
     @Column(name = "phone_number", length = 16)
     private String phoneNumber;
 
+    @Column(name = "billing_legal_name", length = 200)
+    private String billingLegalName;
+
+    @Column(name = "tax_registration_number", length = 80)
+    private String taxRegistrationNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id")
     private Address address;
@@ -173,6 +179,22 @@ public class User {
      */
     public String getPhoneNumber() {
         return phoneNumber;
+    }
+
+    public String getBillingLegalName() {
+        return billingLegalName;
+    }
+
+    public void setBillingLegalName(String billingLegalName) {
+        this.billingLegalName = billingLegalName;
+    }
+
+    public String getTaxRegistrationNumber() {
+        return taxRegistrationNumber;
+    }
+
+    public void setTaxRegistrationNumber(String taxRegistrationNumber) {
+        this.taxRegistrationNumber = taxRegistrationNumber;
     }
 
     /**
