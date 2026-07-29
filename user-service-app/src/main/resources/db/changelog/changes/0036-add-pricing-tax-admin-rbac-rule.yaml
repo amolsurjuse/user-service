@@ -1,0 +1,95 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0036-add-pricing-tax-admin-rbac-rule
+      author: codex
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              WITH policy AS (
+                SELECT id
+                FROM rbac_policies
+                WHERE policy_key = 'gateway-default'
+              ),
+              requested_rule AS (
+                SELECT
+                  '00000000-0000-0000-0000-000000001136'::uuid AS rule_id,
+                  'pricing-tax-admin'::varchar AS name,
+                  '*'::varchar AS methods,
+                  '/pricing/api/v1/admin/tax/**'::varchar AS path_pattern,
+                  'ALLOW'::varchar AS effect,
+                  false AS allow_anonymous,
+                  'SYSTEM_ADMIN'::varchar AS required_roles
+              ),
+              updated_rule AS (
+                UPDATE rbac_policy_rules existing
+                SET methods = rr.methods,
+                    path_pattern = rr.path_pattern,
+                    effect = rr.effect,
+                    allow_anonymous = rr.allow_anonymous,
+                    required_roles = rr.required_roles
+                FROM requested_rule rr
+                CROSS JOIN policy p
+                WHERE existing.policy_id = p.id
+                  AND existing.name = rr.name
+                  AND (
+                    existing.methods IS DISTINCT FROM rr.methods
+                    OR existing.path_pattern IS DISTINCT FROM rr.path_pattern
+                    OR existing.effect IS DISTINCT FROM rr.effect
+                    OR existing.allow_anonymous IS DISTINCT FROM rr.allow_anonymous
+                    OR existing.required_roles IS DISTINCT FROM rr.required_roles
+                  )
+                RETURNING existing.policy_id
+              ),
+              inserted_rule AS (
+                INSERT INTO rbac_policy_rules (
+                  id,
+                  policy_id,
+                  sort_order,
+                  name,
+                  methods,
+                  path_pattern,
+                  effect,
+                  allow_anonymous,
+                  required_roles
+                )
+                SELECT
+                  rr.rule_id,
+                  p.id,
+                  COALESCE(MAX(existing.sort_order), -1) + 1,
+                  rr.name,
+                  rr.methods,
+                  rr.path_pattern,
+                  rr.effect,
+                  rr.allow_anonymous,
+                  rr.required_roles
+                FROM policy p
+                CROSS JOIN requested_rule rr
+                LEFT JOIN rbac_policy_rules existing ON existing.policy_id = p.id
+                WHERE NOT EXISTS (
+                  SELECT 1
+                  FROM rbac_policy_rules present
+                  WHERE present.policy_id = p.id
+                    AND present.name = rr.name
+                )
+                GROUP BY p.id, rr.rule_id, rr.name, rr.methods, rr.path_pattern,
+                         rr.effect, rr.allow_anonymous, rr.required_roles
+                RETURNING policy_id
+              ),
+              touched_policy AS (
+                SELECT policy_id FROM updated_rule
+                UNION
+                SELECT policy_id FROM inserted_rule
+              )
+              UPDATE rbac_policies p
+              SET version = p.version + 1,
+                  updated_at = now()
+              WHERE p.id IN (SELECT policy_id FROM touched_policy);
+      rollback:
+        - sql:
+            dbms: postgresql
+            sql: |
+              DELETE FROM rbac_policy_rules
+              WHERE id = '00000000-0000-0000-0000-000000001136'::uuid;
