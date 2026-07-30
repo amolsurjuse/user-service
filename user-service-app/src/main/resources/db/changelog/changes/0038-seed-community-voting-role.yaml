@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0038-seed-community-voting-role
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          sqlCheck:
+            expectedResult: 1
+            sql: SELECT count(*) FROM roles WHERE name = 'COMMUNITY_VOTING_USER'
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column: { name: id, value: "7ddcff04-a6dd-4c91-9350-44272d43af23" }
+              - column: { name: name, value: "COMMUNITY_VOTING_USER" }

@@ -108,14 +108,23 @@ public class UserManagementService {
         var userRole = roleRepository.findByName("USER")
                 .orElseThrow(() -> new IllegalStateException("Role USER not seeded"));
         user.addRole(userRole);
-        roleRepository.findByName("CUSTOMER").ifPresent(user::addRole);
+        boolean communityVoting = "COMMUNITY_VOTING".equalsIgnoreCase(request.application());
+        if (communityVoting) {
+            var votingRole = roleRepository.findByName("COMMUNITY_VOTING_USER")
+                    .orElseThrow(() -> new IllegalStateException("Role COMMUNITY_VOTING_USER not seeded"));
+            user.addRole(votingRole);
+        } else {
+            roleRepository.findByName("CUSTOMER").ifPresent(user::addRole);
+        }
 
         userRepository.save(user);
         LOGGER.info("User persisted with id={} email={} roles={}", user.getId(), user.getEmail(), user.getRoles().stream().map(role -> role.getName()).toList());
 
         // Keep user creation and wallet provisioning in one business flow.
-        paymentProvisioningClient.createWallet(user.getId().toString(), resolveCountryCode(user));
-        LOGGER.info("Wallet provisioning requested for userId={} countryCode={}", user.getId(), resolveCountryCode(user));
+        if (!communityVoting) {
+            paymentProvisioningClient.createWallet(user.getId().toString(), resolveCountryCode(user));
+            LOGGER.info("Wallet provisioning requested for userId={} countryCode={}", user.getId(), resolveCountryCode(user));
+        }
 
         return toPrincipal(user);
     }
