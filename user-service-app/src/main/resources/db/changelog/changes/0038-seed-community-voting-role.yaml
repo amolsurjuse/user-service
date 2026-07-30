@@ -27,7 +27,7 @@ databaseChangeLog:
                 SELECT id FROM rbac_policies WHERE policy_key = 'gateway-default'
               ), updated AS (
                 UPDATE rbac_policy_rules r
-                SET methods = '*', path_pattern = '/community-voting/v1/**',
+                SET methods = '*', path_pattern = '/community-voting/v1/events/**',
                     effect = 'ALLOW', allow_anonymous = false,
                     required_roles = 'COMMUNITY_VOTING_USER'
                 FROM policy p
@@ -38,11 +38,47 @@ databaseChangeLog:
                   (id, policy_id, sort_order, name, methods, path_pattern, effect, allow_anonymous, required_roles)
                 SELECT '7ddcff04-a6dd-4c91-9350-44272d43af24'::uuid, p.id,
                        COALESCE(MAX(r.sort_order), -1) + 1, 'community-voting-api', '*',
-                       '/community-voting/v1/**', 'ALLOW', false, 'COMMUNITY_VOTING_USER'
+                       '/community-voting/v1/events/**', 'ALLOW', false, 'COMMUNITY_VOTING_USER'
                 FROM policy p LEFT JOIN rbac_policy_rules r ON r.policy_id = p.id
                 WHERE NOT EXISTS (
                   SELECT 1 FROM rbac_policy_rules existing
                   WHERE existing.policy_id = p.id AND existing.name = 'community-voting-api'
+                )
+                GROUP BY p.id
+                RETURNING policy_id
+              ), touched AS (
+                SELECT policy_id FROM updated UNION SELECT policy_id FROM inserted
+              )
+              UPDATE rbac_policies p SET version = p.version + 1, updated_at = now()
+              WHERE p.id IN (SELECT policy_id FROM touched);
+  - changeSet:
+      id: 0038-add-community-voting-public-event-rule
+      author: codex
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              WITH policy AS (
+                SELECT id FROM rbac_policies WHERE policy_key = 'gateway-default'
+              ), updated AS (
+                UPDATE rbac_policy_rules r
+                SET methods = 'GET', path_pattern = '/community-voting/v1/public/**',
+                    effect = 'ALLOW', allow_anonymous = true, required_roles = NULL
+                FROM policy p
+                WHERE r.policy_id = p.id AND r.name = 'community-voting-public-events'
+                RETURNING r.policy_id
+              ), inserted AS (
+                INSERT INTO rbac_policy_rules
+                  (id, policy_id, sort_order, name, methods, path_pattern, effect, allow_anonymous, required_roles)
+                SELECT '7ddcff04-a6dd-4c91-9350-44272d43af25'::uuid, p.id,
+                       COALESCE(MAX(r.sort_order), -1) + 1, 'community-voting-public-events', 'GET',
+                       '/community-voting/v1/public/**', 'ALLOW', true, NULL
+                FROM policy p LEFT JOIN rbac_policy_rules r ON r.policy_id = p.id
+                WHERE NOT EXISTS (
+                  SELECT 1 FROM rbac_policy_rules existing
+                  WHERE existing.policy_id = p.id AND existing.name = 'community-voting-public-events'
                 )
                 GROUP BY p.id
                 RETURNING policy_id
