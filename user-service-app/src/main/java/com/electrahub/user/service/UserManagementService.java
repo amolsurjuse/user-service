@@ -42,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -839,20 +840,16 @@ public class UserManagementService {
         String city = null;
         String state = null;
         String postalCode = null;
-        String countryCode = null;
-        String countryName = null;
-        String countryDialCode = null;
+        ResolvedCountry resolvedCountry = resolveProfileCountry(user);
+        String countryCode = resolvedCountry.code();
+        String countryName = resolvedCountry.name();
+        String countryDialCode = resolvedCountry.dialCode();
 
         if (user.getAddress() != null) {
             street = user.getAddress().getStreet();
             city = user.getAddress().getCity();
             state = user.getAddress().getState();
             postalCode = user.getAddress().getPostalCode();
-            if (user.getAddress().getCountry() != null) {
-                countryCode = user.getAddress().getCountry().getIsoCode();
-                countryName = user.getAddress().getCountry().getName();
-                countryDialCode = user.getAddress().getCountry().getDialCode();
-            }
         }
 
         return new UserProfileResponse(
@@ -874,6 +871,45 @@ public class UserManagementService {
                 user.isEmailVerified(),
                 user.getCreatedAt()
         );
+    }
+
+    /**
+     * Resolves a complete, non-null country tuple for profile responses.
+     * Address data is authoritative. Legacy registrations without an address
+     * are inferred from the international phone prefix, with US as the
+     * platform default when neither source identifies a country.
+     */
+    private ResolvedCountry resolveProfileCountry(User user) {
+        if (user.getAddress() != null && user.getAddress().getCountry() != null) {
+            Country country = user.getAddress().getCountry();
+            return new ResolvedCountry(country.getIsoCode(), country.getName(), country.getDialCode());
+        }
+
+        String phoneNumber = normalizeOptionalText(user.getPhoneNumber());
+        if (phoneNumber != null && phoneNumber.startsWith("+")) {
+            var inferred = countryRepository.findByEnabledTrueOrderByNameAsc().stream()
+                    .filter(country -> phoneNumber.startsWith(country.getDialCode()))
+                    .sorted(Comparator
+                            .comparingInt((Country country) -> country.getDialCode().length()).reversed()
+                            .thenComparingInt(country -> "US".equals(country.getIsoCode()) ? 0 : 1))
+                    .findFirst();
+            if (inferred.isPresent()) {
+                Country country = inferred.get();
+                return new ResolvedCountry(country.getIsoCode(), country.getName(), country.getDialCode());
+            }
+        }
+
+        return countryRepository.findByIsoCodeAndEnabledTrue("US")
+                .map(country -> new ResolvedCountry(country.getIsoCode(), country.getName(), country.getDialCode()))
+                .orElseGet(() -> new ResolvedCountry("US", "United States", "+1"));
+    }
+
+    private record ResolvedCountry(String code, String name, String dialCode) {
+        private ResolvedCountry {
+            Objects.requireNonNull(code, "code");
+            Objects.requireNonNull(name, "name");
+            Objects.requireNonNull(dialCode, "dialCode");
+        }
     }
 
     /**
