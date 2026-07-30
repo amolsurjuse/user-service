@@ -7,6 +7,7 @@ import com.electrahub.user.api.dto.UserSearchResponse;
 import com.electrahub.user.api.dto.UpdateUserProfileRequest;
 import com.electrahub.user.domain.Role;
 import com.electrahub.user.domain.User;
+import com.electrahub.user.domain.Country;
 import com.electrahub.user.repository.AddressRepository;
 import com.electrahub.user.repository.CountryRepository;
 import com.electrahub.user.repository.RoleRepository;
@@ -82,6 +83,44 @@ class UserManagementServiceTest {
      * <p>Detailed behavior: follows the current implementation path and
      * enforces component-specific rules in `com.electrahub.user.service`.
      */
+    @Test
+    void getProfileInfersNonNullCountryFromInternationalPhoneForLegacyUser() {
+        UUID userId = UUID.randomUUID();
+        setCurrentUser(userId, "driver@example.com", "USER");
+        User user = createUser("driver@example.com", "USER");
+        user.setPhoneNumber("+919970238174");
+        Country india = org.mockito.Mockito.mock(Country.class);
+        when(india.getIsoCode()).thenReturn("IN");
+        when(india.getName()).thenReturn("India");
+        when(india.getDialCode()).thenReturn("+91");
+
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+        when(countryRepository.findByEnabledTrueOrderByNameAsc()).thenReturn(List.of(india));
+
+        var profile = userManagementService.getProfile(userId);
+
+        assertThat(profile.countryCode()).isEqualTo("IN");
+        assertThat(profile.countryName()).isEqualTo("India");
+        assertThat(profile.countryDialCode()).isEqualTo("+91");
+    }
+
+    @Test
+    void getProfileAlwaysReturnsDefaultCountryWhenCountryCannotBeInferred() {
+        UUID userId = UUID.randomUUID();
+        setCurrentUser(userId, "driver@example.com", "USER");
+        User user = createUser("driver@example.com", "USER");
+        user.setPhoneNumber(null);
+
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+        when(countryRepository.findByIsoCodeAndEnabledTrue("US")).thenReturn(java.util.Optional.empty());
+
+        var profile = userManagementService.getProfile(userId);
+
+        assertThat(profile.countryCode()).isEqualTo("US");
+        assertThat(profile.countryName()).isEqualTo("United States");
+        assertThat(profile.countryDialCode()).isEqualTo("+1");
+    }
+
     @Test
     void searchReturnsRegularUsersForSystemAdmin() {
         setCurrentUser(UUID.randomUUID(), "sysadmin.dev@electrahub.com", "SYSTEM_ADMIN", "USER");
