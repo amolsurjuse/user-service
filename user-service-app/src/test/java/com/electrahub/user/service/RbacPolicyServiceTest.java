@@ -60,25 +60,44 @@ class RbacPolicyServiceTest {
         RbacPolicyUpdateRequest request = new RbacPolicyUpdateRequest(
                 "ROLE_SYSTEM_ADMIN > ROLE_USER",
                 "DENY",
-                List.of(new RbacRuleRequest(
-                        "payment-gateway-read",
-                        List.of("GET"),
-                        "/gateway/admin/configuration/**",
-                        "ALLOW",
-                        false,
-                        List.of("SYSTEM_ADMIN")
-                ))
+                List.of(
+                        new RbacRuleRequest(
+                                "payment-gateway-read",
+                                List.of("GET"),
+                                "/gateway/admin/configuration/**",
+                                "ALLOW",
+                                false,
+                                List.of("SYSTEM_ADMIN")
+                        ),
+                        new RbacRuleRequest(
+                                "payment-gateway-provider-webhooks",
+                                List.of("GET"),
+                                "/payment-gateway/api/v1/gateway/webhooks/*",
+                                "DENY",
+                                false,
+                                List.of("SYSTEM_ADMIN")
+                        )
+                )
         );
 
         RbacPolicyResponse response = service.updatePolicy(request);
 
-        assertThat(response.rules()).singleElement().satisfies(rule -> {
+        assertThat(response.rules()).hasSize(2);
+        assertThat(response.rules().get(0)).satisfies(rule -> {
             assertThat(rule.name()).isEqualTo("payment-gateway-admin");
             assertThat(rule.methods()).containsExactly("*");
             assertThat(rule.pathPattern()).isEqualTo("/payment-gateway/api/v1/gateway/admin/**");
             assertThat(rule.effect()).isEqualTo("ALLOW");
             assertThat(rule.allowAnonymous()).isFalse();
             assertThat(rule.requiredRoles()).containsExactly("SYSTEM_ADMIN");
+        });
+        assertThat(response.rules().get(1)).satisfies(rule -> {
+            assertThat(rule.name()).isEqualTo("payment-gateway-provider-webhooks");
+            assertThat(rule.methods()).containsExactly("POST");
+            assertThat(rule.pathPattern()).isEqualTo("/payment-gateway/api/v1/gateway/webhooks/*");
+            assertThat(rule.effect()).isEqualTo("ALLOW");
+            assertThat(rule.allowAnonymous()).isTrue();
+            assertThat(rule.requiredRoles()).isEmpty();
         });
         verify(cacheInvalidationClient).invalidate();
     }

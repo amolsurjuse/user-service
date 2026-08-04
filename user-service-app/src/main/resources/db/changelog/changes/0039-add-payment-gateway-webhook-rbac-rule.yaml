@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0039-add-payment-gateway-webhook-rbac-rule
+      author: codex
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              WITH policy AS (
+                SELECT id
+                FROM rbac_policies
+                WHERE policy_key = 'gateway-default'
+              )
+              DELETE FROM rbac_policy_rules existing
+              USING policy p
+              WHERE existing.policy_id = p.id
+                AND (
+                  existing.name = 'payment-gateway-provider-webhooks'
+                  OR existing.path_pattern = '/payment-gateway/api/v1/gateway/webhooks/*'
+                );
+
+              WITH policy AS (
+                SELECT id
+                FROM rbac_policies
+                WHERE policy_key = 'gateway-default'
+              ),
+              base_sort AS (
+                SELECT p.id AS policy_id, COALESCE(MAX(r.sort_order), -1) AS max_sort_order
+                FROM policy p
+                LEFT JOIN rbac_policy_rules r ON r.policy_id = p.id
+                GROUP BY p.id
+              )
+              INSERT INTO rbac_policy_rules (
+                id, policy_id, sort_order, name, methods, path_pattern,
+                effect, allow_anonymous, required_roles
+              )
+              SELECT
+                '00000000-0000-0000-0000-000000001139'::uuid,
+                policy_id,
+                max_sort_order + 1,
+                'payment-gateway-provider-webhooks',
+                'POST',
+                '/payment-gateway/api/v1/gateway/webhooks/*',
+                'ALLOW',
+                true,
+                NULL
+              FROM base_sort;
+
+              UPDATE rbac_policies
+              SET version = version + 1,
+                  updated_at = now()
+              WHERE policy_key = 'gateway-default';
+      rollback:
+        - sql:
+            dbms: postgresql
+            sql: |
+              DELETE FROM rbac_policy_rules
+              WHERE id = '00000000-0000-0000-0000-000000001139'::uuid;

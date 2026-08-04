@@ -32,6 +32,8 @@ public class RbacPolicyService {
     private static final String PAYMENT_GATEWAY_ADMIN_RULE = "payment-gateway-admin";
     private static final String PAYMENT_GATEWAY_ADMIN_PATH = "/payment-gateway/api/v1/gateway/admin/**";
     private static final String LEGACY_PAYMENT_GATEWAY_ADMIN_PATH = "/gateway/admin/configuration/**";
+    private static final String PAYMENT_GATEWAY_WEBHOOK_RULE = "payment-gateway-provider-webhooks";
+    private static final String PAYMENT_GATEWAY_WEBHOOK_PATH = "/payment-gateway/api/v1/gateway/webhooks/*";
 
     private final RbacPolicyRepository rbacPolicyRepository;
     private final RoleRepository roleRepository;
@@ -231,7 +233,7 @@ public class RbacPolicyService {
         List<RbacRuleRequest> reconciled = new ArrayList<>();
         if (requests != null) {
             for (RbacRuleRequest request : requests) {
-                if (request != null && !isPaymentGatewayAdminRule(request)) {
+                if (request != null && !isPaymentGatewayAdminRule(request) && !isPaymentGatewayWebhookRule(request)) {
                     reconciled.add(request);
                 }
             }
@@ -244,6 +246,14 @@ public class RbacPolicyService {
                 false,
                 List.of("SYSTEM_ADMIN")
         ));
+        reconciled.add(new RbacRuleRequest(
+                PAYMENT_GATEWAY_WEBHOOK_RULE,
+                List.of("POST"),
+                PAYMENT_GATEWAY_WEBHOOK_PATH,
+                "ALLOW",
+                true,
+                List.of()
+        ));
         return reconciled;
     }
 
@@ -254,6 +264,11 @@ public class RbacPolicyService {
                 || "payment-gateway-read".equalsIgnoreCase(name)
                 || LEGACY_PAYMENT_GATEWAY_ADMIN_PATH.equals(path)
                 || PAYMENT_GATEWAY_ADMIN_PATH.equals(path);
+    }
+
+    private boolean isPaymentGatewayWebhookRule(RbacRuleRequest request) {
+        return PAYMENT_GATEWAY_WEBHOOK_RULE.equalsIgnoreCase(normalizeText(request.name()))
+                || PAYMENT_GATEWAY_WEBHOOK_PATH.equals(normalizeText(request.pathPattern()));
     }
 
     /**
