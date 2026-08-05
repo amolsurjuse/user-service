@@ -53,6 +53,7 @@ import java.util.UUID;
 @Service
 public class UserManagementService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserManagementService.class);
+    private static final List<String> SUPPORTED_COUNTRY_CODES = List.of("US", "IN");
 
 
     private final UserRepository userRepository;
@@ -354,6 +355,8 @@ public class UserManagementService {
     @Transactional(readOnly = true)
     public List<CountryResponse> countries() {
         return countryRepository.findByEnabledTrueOrderByNameAsc().stream()
+                .filter(country -> SUPPORTED_COUNTRY_CODES.contains(country.getIsoCode()))
+                .sorted(Comparator.comparingInt(country -> SUPPORTED_COUNTRY_CODES.indexOf(country.getIsoCode())))
                 .map(c -> new CountryResponse(c.getIsoCode(), c.getName(), c.getDialCode()))
                 .toList();
     }
@@ -636,6 +639,9 @@ public class UserManagementService {
         String code = normalizeText(countryIsoCode).toUpperCase();
         if (code.isBlank()) {
             return null;
+        }
+        if (!SUPPORTED_COUNTRY_CODES.contains(code)) {
+            throw new IllegalArgumentException("Country not available");
         }
         return countryRepository.findByIsoCodeAndEnabledTrue(code)
                 .orElseThrow(() -> new IllegalArgumentException("Country not available"));

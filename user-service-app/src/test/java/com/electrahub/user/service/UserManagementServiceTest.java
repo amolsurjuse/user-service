@@ -2,9 +2,12 @@ package com.electrahub.user.service;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import com.electrahub.user.api.dto.AddressDto;
+import com.electrahub.user.api.dto.RegisterUserRequest;
 import com.electrahub.user.api.dto.UserCountResponse;
 import com.electrahub.user.api.dto.UserSearchResponse;
 import com.electrahub.user.api.dto.UpdateUserProfileRequest;
+import com.electrahub.user.api.dto.CountryResponse;
 import com.electrahub.user.domain.Role;
 import com.electrahub.user.domain.User;
 import com.electrahub.user.domain.Country;
@@ -75,6 +78,47 @@ class UserManagementServiceTest {
         LOGGER.info("Entering UserManagementServiceTest#clearSecurityContext");
         LOGGER.debug("Entering UserManagementServiceTest#clearSecurityContext with debug context");
         SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void countriesReturnsOnlySupportedPaymentMarketsInDisplayOrder() {
+        Country india = org.mockito.Mockito.mock(Country.class);
+        when(india.getIsoCode()).thenReturn("IN");
+        when(india.getName()).thenReturn("India");
+        when(india.getDialCode()).thenReturn("+91");
+        Country canada = org.mockito.Mockito.mock(Country.class);
+        when(canada.getIsoCode()).thenReturn("CA");
+        Country unitedStates = org.mockito.Mockito.mock(Country.class);
+        when(unitedStates.getIsoCode()).thenReturn("US");
+        when(unitedStates.getName()).thenReturn("United States");
+        when(unitedStates.getDialCode()).thenReturn("+1");
+        when(countryRepository.findByEnabledTrueOrderByNameAsc())
+                .thenReturn(List.of(canada, india, unitedStates));
+
+        List<CountryResponse> countries = userManagementService.countries();
+
+        assertThat(countries).containsExactly(
+                new CountryResponse("US", "United States", "+1"),
+                new CountryResponse("IN", "India", "+91")
+        );
+    }
+
+    @Test
+    void registerRejectsCountryOutsideSupportedPaymentMarkets() {
+        RegisterUserRequest request = new RegisterUserRequest(
+                "driver@example.com",
+                "password123",
+                "Avery",
+                "Driver",
+                "+15551234567",
+                new AddressDto("100 Main St", "Toronto", "ON", "M5V 2T6", "CA")
+        );
+        when(userRepository.existsByEmail("driver@example.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> userManagementService.register(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Country not available");
+        verify(countryRepository, never()).findByIsoCodeAndEnabledTrue("CA");
     }
 
     /**
