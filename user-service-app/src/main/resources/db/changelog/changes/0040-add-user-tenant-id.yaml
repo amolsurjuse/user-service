@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0040-add-user-tenant-id
+      author: codex
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: tenant_id
+                  type: varchar(64)
+                  defaultValue: electrahub
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: users
+            indexName: idx_users_tenant_id
+            columns:
+              - column:
+                  name: tenant_id

@@ -101,6 +101,7 @@ message UserPrincipalResponse {
   string email = 2;
   bool enabled = 3;
   repeated string roles = 4;
+  string tenant_id = 5;
 }
 
 message GetUserProfileRequest {

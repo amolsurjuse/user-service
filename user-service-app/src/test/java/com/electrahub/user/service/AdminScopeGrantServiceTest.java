@@ -84,6 +84,7 @@ class AdminScopeGrantServiceTest {
             assertThat(grant.accessLevel()).isEqualTo(AdminScopeAccess.OPERATE);
         });
         assertThat(operator.isEmailVerified()).isTrue();
+        assertThat(operator.getTenantId()).isEqualTo("electrahub");
         assertThat(operator.getRoles()).extracting(Role::getName).containsExactly("NETWORK");
 
         verify(grants).deleteByUserId(operator.getId());

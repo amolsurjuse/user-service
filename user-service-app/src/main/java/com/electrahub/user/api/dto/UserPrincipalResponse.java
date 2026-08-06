@@ -9,6 +9,11 @@ public record UserPrincipalResponse(
         boolean enabled,
         boolean emailVerified,
         List<String> roles,
-        boolean pendingDeletion
+        boolean pendingDeletion,
+        String tenantId
 ) {
+    public UserPrincipalResponse(UUID userId, String email, boolean enabled, boolean emailVerified,
+                                 List<String> roles, boolean pendingDeletion) {
+        this(userId, email, enabled, emailVerified, roles, pendingDeletion, "electrahub");
+    }
 }

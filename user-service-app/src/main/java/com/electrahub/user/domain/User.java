@@ -33,6 +33,9 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "tenant_id", nullable = false, length = 64)
+    private String tenantId;
+
     @Column(name = "first_name", length = 100)
     private String firstName;
 
@@ -98,6 +101,7 @@ public class User {
         this.id = id;
         this.email = email.toLowerCase();
         this.passwordHash = passwordHash;
+        this.tenantId = "electrahub";
         this.enabled = enabled;
         this.emailVerified = false;
         this.createdAt = now;
@@ -146,6 +150,18 @@ public class User {
      */
     public String getPasswordHash() {
         return passwordHash;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        String normalized = tenantId == null ? "" : tenantId.trim().toLowerCase(java.util.Locale.ROOT);
+        if (!normalized.matches("[a-z0-9][a-z0-9._:-]{0,63}")) {
+            throw new IllegalArgumentException("Invalid tenant ID");
+        }
+        this.tenantId = normalized;
     }
 
     /**

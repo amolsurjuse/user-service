@@ -106,6 +106,8 @@ public class AdminScopeGrantService {
                 true,
                 now
         );
+        user.setTenantId(request.tenantId() == null || request.tenantId().isBlank()
+                ? "electrahub" : request.tenantId());
         user.markEmailVerified();
         user.setFirstName(request.firstName().trim());
         user.setLastName(request.lastName().trim());

@@ -787,7 +787,8 @@ public class UserManagementService {
                 user.isEnabled(),
                 user.isEmailVerified(),
                 user.getRoles().stream().map(role -> role.getName()).toList(),
-                false
+                false,
+                user.getTenantId()
         );
     }
 
