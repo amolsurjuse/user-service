@@ -77,3 +77,5 @@ databaseChangeLog:
       file: db/changelog/changes/0039-add-payment-gateway-webhook-rbac-rule.yaml
   - include:
       file: db/changelog/changes/0040-add-user-tenant-id.yaml
+  - include:
+      file: db/changelog/changes/0042-allow-readonly-dashboard-analytics.yaml

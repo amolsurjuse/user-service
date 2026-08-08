@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0042-allow-readonly-dashboard-analytics
+      author: codex
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            stripComments: true
+            sql: |
+              WITH policy AS (
+                SELECT id
+                FROM rbac_policies
+                WHERE policy_key = 'gateway-default'
+              ),
+              deleted_rules AS (
+                DELETE FROM rbac_policy_rules rule
+                USING policy
+                WHERE rule.policy_id = policy.id
+                  AND rule.name IN (
+                    'readonly-admin-billing-users-root-deny',
+                    'readonly-admin-billing-users-deny',
+                    'readonly-admin-billing-reports-root-deny',
+                    'readonly-admin-billing-reports-deny'
+                  )
+                RETURNING rule.policy_id
+              )
+              UPDATE rbac_policies policy
+              SET version = policy.version + 1,
+                  updated_at = now()
+              WHERE policy.id IN (SELECT DISTINCT policy_id FROM deleted_rules);
