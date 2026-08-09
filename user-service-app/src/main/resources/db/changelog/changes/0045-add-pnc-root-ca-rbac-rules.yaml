@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0045-add-pnc-root-ca-rbac-rules
+      author: codex
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              WITH policy AS (
+                SELECT id FROM rbac_policies WHERE policy_key = 'gateway-default'
+              ), requested_rules(rule_id,name,methods,path_pattern,effect,allow_anonymous,required_roles) AS (
+                VALUES
+                  ('00000000-0000-0000-0000-000000001145'::uuid,'pnc-root-ca-read','GET','/pnc/api/v1/admin/pki/root-ca-ceremonies','ALLOW',false,'SYSTEM_ADMIN,ADMIN_READ_ONLY'),
+                  ('00000000-0000-0000-0000-000000001146'::uuid,'pnc-root-ca-read-child','GET','/pnc/api/v1/admin/pki/root-ca-ceremonies/**','ALLOW',false,'SYSTEM_ADMIN,ADMIN_READ_ONLY'),
+                  ('00000000-0000-0000-0000-000000001147'::uuid,'pnc-root-ca-write','POST','/pnc/api/v1/admin/pki/root-ca-ceremonies','ALLOW',false,'SYSTEM_ADMIN'),
+                  ('00000000-0000-0000-0000-000000001148'::uuid,'pnc-root-ca-write-child','POST','/pnc/api/v1/admin/pki/root-ca-ceremonies/**','ALLOW',false,'SYSTEM_ADMIN')
+              ), updated_rules AS (
+                UPDATE rbac_policy_rules existing SET methods=rr.methods,path_pattern=rr.path_pattern,
+                       effect=rr.effect,allow_anonymous=rr.allow_anonymous,required_roles=rr.required_roles
+                  FROM requested_rules rr CROSS JOIN policy p
+                 WHERE existing.policy_id=p.id AND existing.name=rr.name
+                   AND (existing.methods IS DISTINCT FROM rr.methods OR existing.path_pattern IS DISTINCT FROM rr.path_pattern
+                     OR existing.effect IS DISTINCT FROM rr.effect OR existing.allow_anonymous IS DISTINCT FROM rr.allow_anonymous
+                     OR existing.required_roles IS DISTINCT FROM rr.required_roles)
+                RETURNING existing.policy_id
+              ), inserted_rules AS (
+                INSERT INTO rbac_policy_rules(id,policy_id,sort_order,name,methods,path_pattern,effect,allow_anonymous,required_roles)
+                SELECT rr.rule_id,p.id,COALESCE((SELECT MAX(existing.sort_order) FROM rbac_policy_rules existing WHERE existing.policy_id=p.id),-1)
+                         + row_number() OVER (ORDER BY rr.name),
+                       rr.name,rr.methods,rr.path_pattern,rr.effect,rr.allow_anonymous,rr.required_roles
+                  FROM policy p CROSS JOIN requested_rules rr
+                 WHERE NOT EXISTS (SELECT 1 FROM rbac_policy_rules present WHERE present.policy_id=p.id AND present.name=rr.name)
+                RETURNING policy_id
+              ), touched_policy AS (
+                SELECT policy_id FROM updated_rules UNION SELECT policy_id FROM inserted_rules
+              )
+              UPDATE rbac_policies p SET version=p.version+1,updated_at=now()
+               WHERE p.id IN (SELECT policy_id FROM touched_policy);
+      rollback:
+        - sql:
+            dbms: postgresql
+            sql: DELETE FROM rbac_policy_rules WHERE id IN ('00000000-0000-0000-0000-000000001145'::uuid,'00000000-0000-0000-0000-000000001146'::uuid,'00000000-0000-0000-0000-000000001147'::uuid,'00000000-0000-0000-0000-000000001148'::uuid);

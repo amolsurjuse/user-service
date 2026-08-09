@@ -83,3 +83,5 @@ databaseChangeLog:
       file: db/changelog/changes/0043-create-pnc-contract-outbox.yaml
   - include:
       file: db/changelog/changes/0044-add-pnc-admin-read-rbac-rule.yaml
+  - include:
+      file: db/changelog/changes/0045-add-pnc-root-ca-rbac-rules.yaml
