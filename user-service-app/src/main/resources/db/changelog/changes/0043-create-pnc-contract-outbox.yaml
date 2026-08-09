@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0043-create-pnc-contract-outbox
+      author: codex
+      changes:
+        - createTable:
+            schemaName: user_mgmt
+            tableName: pnc_contract_outbox_event
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: tenant_id, type: varchar(64), constraints: { nullable: false } }
+              - column: { name: aggregate_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: event_type, type: varchar(96), constraints: { nullable: false } }
+              - column: { name: payload, type: jsonb, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(16), defaultValue: PENDING, constraints: { nullable: false } }
+              - column: { name: attempts, type: integer, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: published_at, type: timestamptz, constraints: { nullable: true } }
+              - column: { name: last_error, type: varchar(500), constraints: { nullable: true } }
+        - addUniqueConstraint:
+            schemaName: user_mgmt
+            tableName: pnc_contract_outbox_event
+            columnNames: tenant_id, aggregate_id, event_type
+            constraintName: uq_pnc_contract_outbox_user_event
+        - createIndex:
+            schemaName: user_mgmt
+            tableName: pnc_contract_outbox_event
+            indexName: ix_pnc_contract_outbox_delivery
+            columns:
+              - column: { name: status }
+              - column: { name: created_at }
+        - sql:
+            sql: ALTER TABLE user_mgmt.pnc_contract_outbox_event ADD CONSTRAINT ck_pnc_contract_outbox_status CHECK (status in ('PENDING','PUBLISHED','FAILED'));
+      rollback:
+        - dropTable: { schemaName: user_mgmt, tableName: pnc_contract_outbox_event }

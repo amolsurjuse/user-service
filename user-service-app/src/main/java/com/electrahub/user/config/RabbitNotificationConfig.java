@@ -17,6 +17,7 @@ public class RabbitNotificationConfig {
     RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, JacksonJsonMessageConverter converter) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(converter);
+        rabbitTemplate.setMandatory(true);
         return rabbitTemplate;
     }
 }

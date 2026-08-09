@@ -158,7 +158,7 @@ public class User {
 
     public void setTenantId(String tenantId) {
         String normalized = tenantId == null ? "" : tenantId.trim().toLowerCase(java.util.Locale.ROOT);
-        if (!normalized.matches("[a-z0-9][a-z0-9._:-]{0,63}")) {
+        if (!normalized.matches("[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?")) {
             throw new IllegalArgumentException("Invalid tenant ID");
         }
         this.tenantId = normalized;

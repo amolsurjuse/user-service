@@ -64,6 +64,9 @@ class UserManagementServiceTest {
     @Mock
     private UserNotificationOutbox notificationOutbox;
 
+    @Mock
+    private PncMobilityContractOutbox pncMobilityContractOutbox;
+
     @InjectMocks
     private UserManagementService userManagementService;
 
@@ -119,6 +122,21 @@ class UserManagementServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Country not available");
         verify(countryRepository, never()).findByIsoCodeAndEnabledTrue("CA");
+    }
+
+    @Test
+    void registerCustomerAtomicallyRequestsDefaultMobilityContract() {
+        RegisterUserRequest request = new RegisterUserRequest("driver@example.com", "password123", "Avery",
+                "Driver", "+15551234567", null);
+        when(userRepository.existsByEmail("driver@example.com")).thenReturn(false);
+        when(roleRepository.findByName("USER")).thenReturn(java.util.Optional.of(new Role(UUID.randomUUID(), "USER")));
+        when(roleRepository.findByName("CUSTOMER")).thenReturn(java.util.Optional.of(new Role(UUID.randomUUID(), "CUSTOMER")));
+
+        var response = userManagementService.register(request);
+
+        verify(pncMobilityContractOutbox).enqueue(eq("electrahub"), eq(response.userId()), eq("US"));
+        verify(paymentProvisioningClient).createWallet(eq(response.userId().toString()), eq("US"));
+        assertThat(response.roles()).contains("USER", "CUSTOMER");
     }
 
     /**

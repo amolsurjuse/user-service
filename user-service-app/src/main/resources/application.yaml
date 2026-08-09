@@ -32,6 +32,8 @@ spring:
     port: ${SPRING_RABBITMQ_PORT:5672}
     username: ${SPRING_RABBITMQ_USERNAME:guest}
     password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
 
 server:
   port: ${SERVER_PORT:8082}
@@ -48,6 +50,15 @@ app:
     outbox:
       publish-delay-ms: ${APP_NOTIFICATION_OUTBOX_PUBLISH_DELAY_MS:5000}
       batch-size: ${APP_NOTIFICATION_OUTBOX_BATCH_SIZE:25}
+  pnc:
+    publisher-enabled: ${APP_PNC_PUBLISHER_ENABLED:false}
+    backfill-enabled: ${APP_PNC_BACKFILL_ENABLED:false}
+    exchange: ${APP_PNC_EXCHANGE:pnc.events}
+    driver-contract-routing-key: ${APP_PNC_DRIVER_CONTRACT_ROUTING_KEY:driver.mobility-contract.required}
+    provider-id: ${APP_PNC_PROVIDER_ID:EHB}
+    outbox:
+      publish-delay-ms: ${APP_PNC_OUTBOX_PUBLISH_DELAY_MS:5000}
+      batch-size: ${APP_PNC_OUTBOX_BATCH_SIZE:25}
   security:
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER:auth-service}

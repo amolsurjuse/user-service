@@ -62,6 +62,7 @@ public class UserManagementService {
     private final CountryRepository countryRepository;
     private final PaymentProvisioningClient paymentProvisioningClient;
     private final UserNotificationOutbox notificationOutbox;
+    private final PncMobilityContractOutbox pncMobilityContractOutbox;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public UserManagementService(UserRepository userRepository,
@@ -69,13 +70,15 @@ public class UserManagementService {
                                   AddressRepository addressRepository,
                                   CountryRepository countryRepository,
                                   PaymentProvisioningClient paymentProvisioningClient,
-                                  UserNotificationOutbox notificationOutbox) {
+                                  UserNotificationOutbox notificationOutbox,
+                                  PncMobilityContractOutbox pncMobilityContractOutbox) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.addressRepository = addressRepository;
         this.countryRepository = countryRepository;
         this.paymentProvisioningClient = paymentProvisioningClient;
         this.notificationOutbox = notificationOutbox;
+        this.pncMobilityContractOutbox = pncMobilityContractOutbox;
     }
 
     /**
@@ -124,8 +127,11 @@ public class UserManagementService {
 
         // Keep user creation and wallet provisioning in one business flow.
         if (!communityVoting) {
-            paymentProvisioningClient.createWallet(user.getId().toString(), resolveCountryCode(user));
-            LOGGER.info("Wallet provisioning requested for userId={} countryCode={}", user.getId(), resolveCountryCode(user));
+            String countryCode = resolveCountryCode(user);
+            pncMobilityContractOutbox.enqueue(user.getTenantId(), user.getId(), countryCode);
+            paymentProvisioningClient.createWallet(user.getId().toString(), countryCode);
+            LOGGER.info("Wallet and PnC mobility-contract provisioning requested for userId={} tenantId={} countryCode={}",
+                    user.getId(), user.getTenantId(), countryCode);
         }
 
         return toPrincipal(user);
