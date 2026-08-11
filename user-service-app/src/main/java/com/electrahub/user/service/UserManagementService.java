@@ -194,6 +194,26 @@ public class UserManagementService {
         return toPrincipal(user);
     }
 
+    @Transactional(readOnly = true)
+    public PhoneVerificationContact getPhoneVerificationContact(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+        return new PhoneVerificationContact(user.getPhoneNumber(), user.isPhoneVerified());
+    }
+
+    @Transactional
+    public PhoneVerificationContact markPhoneVerified(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+        if (user.getPhoneNumber() == null || user.getPhoneNumber().isBlank()) {
+            throw new IllegalArgumentException("A phone number is required");
+        }
+        user.markPhoneVerified();
+        return new PhoneVerificationContact(user.getPhoneNumber(), true);
+    }
+
+    public record PhoneVerificationContact(String phoneNumber, boolean phoneVerified) {}
+
     /**
      * Retrieves get profile for `UserManagementService`.
      *

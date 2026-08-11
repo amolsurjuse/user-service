@@ -34,6 +34,16 @@ public class InternalPasswordController {
         return userManagementService.markEmailVerified(userId);
     }
 
+    @GetMapping("/{userId}/phone-verification")
+    public UserManagementService.PhoneVerificationContact phoneVerification(@PathVariable UUID userId) {
+        return userManagementService.getPhoneVerificationContact(userId);
+    }
+
+    @PostMapping("/{userId}/phone/verify")
+    public UserManagementService.PhoneVerificationContact markPhoneVerified(@PathVariable UUID userId) {
+        return userManagementService.markPhoneVerified(userId);
+    }
+
     @GetMapping("/by-email/{email}/principal")
     public com.electrahub.user.api.dto.UserPrincipalResponse principalByEmail(@PathVariable String email) {
         return userManagementService.getPrincipalByEmail(email);
