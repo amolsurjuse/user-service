@@ -81,30 +81,43 @@ class UserManagementServiceTest {
     }
 
     @Test
-    void countriesReturnsOnlySupportedPaymentMarketsInDisplayOrder() {
+    void countriesReturnsAllEnabledCountriesFromRepository() {
         Country india = org.mockito.Mockito.mock(Country.class);
         when(india.getIsoCode()).thenReturn("IN");
         when(india.getName()).thenReturn("India");
         when(india.getDialCode()).thenReturn("+91");
+        Country netherlands = org.mockito.Mockito.mock(Country.class);
+        when(netherlands.getIsoCode()).thenReturn("NL");
+        when(netherlands.getName()).thenReturn("Netherlands");
+        when(netherlands.getDialCode()).thenReturn("+31");
+        Country singapore = org.mockito.Mockito.mock(Country.class);
+        when(singapore.getIsoCode()).thenReturn("SG");
+        when(singapore.getName()).thenReturn("Singapore");
+        when(singapore.getDialCode()).thenReturn("+65");
         Country canada = org.mockito.Mockito.mock(Country.class);
         when(canada.getIsoCode()).thenReturn("CA");
+        when(canada.getName()).thenReturn("Canada");
+        when(canada.getDialCode()).thenReturn("+1");
         Country unitedStates = org.mockito.Mockito.mock(Country.class);
         when(unitedStates.getIsoCode()).thenReturn("US");
         when(unitedStates.getName()).thenReturn("United States");
         when(unitedStates.getDialCode()).thenReturn("+1");
         when(countryRepository.findByEnabledTrueOrderByNameAsc())
-                .thenReturn(List.of(canada, india, unitedStates));
+                .thenReturn(List.of(canada, india, netherlands, singapore, unitedStates));
 
         List<CountryResponse> countries = userManagementService.countries();
 
         assertThat(countries).containsExactly(
-                new CountryResponse("US", "United States", "+1"),
-                new CountryResponse("IN", "India", "+91")
+                new CountryResponse("CA", "Canada", "+1"),
+                new CountryResponse("IN", "India", "+91"),
+                new CountryResponse("NL", "Netherlands", "+31"),
+                new CountryResponse("SG", "Singapore", "+65"),
+                new CountryResponse("US", "United States", "+1")
         );
     }
 
     @Test
-    void registerRejectsCountryOutsideSupportedPaymentMarkets() {
+    void registerRejectsCountryThatIsNotEnabled() {
         RegisterUserRequest request = new RegisterUserRequest(
                 "driver@example.com",
                 "password123",
@@ -118,7 +131,7 @@ class UserManagementServiceTest {
         assertThatThrownBy(() -> userManagementService.register(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Country not available");
-        verify(countryRepository, never()).findByIsoCodeAndEnabledTrue("CA");
+        verify(countryRepository).findByIsoCodeAndEnabledTrue("CA");
     }
 
     /**

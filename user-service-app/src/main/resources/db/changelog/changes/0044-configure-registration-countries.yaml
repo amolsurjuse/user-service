@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0044-configure-registration-countries
+      author: codex
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: |
+              UPDATE country
+              SET enabled = iso_code IN ('US', 'IN', 'NL', 'SG')
+              WHERE enabled IS DISTINCT FROM (iso_code IN ('US', 'IN', 'NL', 'SG'));
