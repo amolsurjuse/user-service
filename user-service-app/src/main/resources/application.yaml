@@ -49,6 +49,7 @@ app:
       publish-delay-ms: ${APP_NOTIFICATION_OUTBOX_PUBLISH_DELAY_MS:5000}
       batch-size: ${APP_NOTIFICATION_OUTBOX_BATCH_SIZE:25}
   security:
+    internal-token: ${APP_SECURITY_INTERNAL_TOKEN:}
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER:auth-service}
       secret: ${APP_SECURITY_JWT_SECRET:CHANGE_ME_TO_A_LONG_RANDOM_64+_CHAR_SECRET_CHANGE_ME}
