@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0043-add-phone-verification
+      author: codex
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: phone_verified
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

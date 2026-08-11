@@ -61,6 +61,9 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified;
 
+    @Column(name = "phone_verified", nullable = false)
+    private boolean phoneVerified;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -104,6 +107,7 @@ public class User {
         this.tenantId = "electrahub";
         this.enabled = enabled;
         this.emailVerified = false;
+        this.phoneVerified = false;
         this.createdAt = now;
         this.updatedAt = now;
     }
@@ -239,6 +243,8 @@ public class User {
         return emailVerified;
     }
 
+    public boolean isPhoneVerified() { return phoneVerified; }
+
     /**
      * Retrieves get created at for `User`.
      *
@@ -352,4 +358,6 @@ public class User {
     public void markEmailVerified() {
         this.emailVerified = true;
     }
+
+    public void markPhoneVerified() { this.phoneVerified = true; }
 }
