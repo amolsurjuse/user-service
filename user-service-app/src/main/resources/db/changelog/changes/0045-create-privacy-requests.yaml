@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0045-create-privacy-requests
+      author: codex
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              CREATE TABLE user_mgmt.privacy_requests (
+                id UUID PRIMARY KEY,
+                user_id UUID NOT NULL REFERENCES user_mgmt.users(id),
+                request_type VARCHAR(24) NOT NULL,
+                status VARCHAR(24) NOT NULL,
+                jurisdiction_code VARCHAR(20),
+                details VARCHAR(1000),
+                submitted_at TIMESTAMPTZ NOT NULL,
+                due_at TIMESTAMPTZ NOT NULL,
+                CONSTRAINT ck_privacy_request_type CHECK (request_type IN ('ACCESS','ERASURE','RESTRICTION','RECTIFICATION','PORTABILITY')),
+                CONSTRAINT ck_privacy_request_status CHECK (status IN ('RECEIVED','IN_REVIEW','FULFILLED','REJECTED'))
+              );
+              CREATE INDEX idx_privacy_request_user_time ON user_mgmt.privacy_requests(user_id, submitted_at DESC);
+              CREATE OR REPLACE FUNCTION user_mgmt.reject_privacy_request_mutation() RETURNS trigger AS $$
+              BEGIN
+                RAISE EXCEPTION 'privacy request intake records are append-only';
+              END;
+              $$ LANGUAGE plpgsql;
+              CREATE TRIGGER trg_privacy_request_immutable BEFORE UPDATE OR DELETE ON user_mgmt.privacy_requests
+                FOR EACH ROW EXECUTE FUNCTION user_mgmt.reject_privacy_request_mutation();
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            sql: |
+              WITH policy AS (SELECT id FROM rbac_policies WHERE policy_key='gateway-default'),
+              base_sort AS (
+                SELECT p.id policy_id, COALESCE(MAX(r.sort_order), -1) max_sort_order
+                FROM policy p LEFT JOIN rbac_policy_rules r ON r.policy_id=p.id GROUP BY p.id
+              )
+              INSERT INTO rbac_policy_rules
+                (id, policy_id, sort_order, name, methods, path_pattern, effect, allow_anonymous, required_roles)
+              SELECT 'dd50582a-6ff6-4393-8787-7cb75dcdb896'::uuid, policy_id, max_sort_order + 1,
+                     'authenticated-privacy-rights', 'GET,POST', '/user/api/v1/privacy/**', 'ALLOW', false,
+                     'USER,SYSTEM_ADMIN'
+              FROM base_sort
+              ON CONFLICT (id) DO NOTHING;
+              UPDATE rbac_policies SET version=version+1, updated_at=now() WHERE policy_key='gateway-default';
+      rollback:
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              DELETE FROM rbac_policy_rules WHERE id='dd50582a-6ff6-4393-8787-7cb75dcdb896'::uuid;
+              DROP TRIGGER IF EXISTS trg_privacy_request_immutable ON user_mgmt.privacy_requests;
+              DROP FUNCTION IF EXISTS user_mgmt.reject_privacy_request_mutation();
+              DROP TABLE IF EXISTS user_mgmt.privacy_requests;
