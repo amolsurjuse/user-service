@@ -11,3 +11,7 @@ Erasure is deliberately a coordinated request rather than an immediate cascade d
 ledger entries, security evidence, and terms acceptance can have statutory retention duties. Fulfilment must erase or
 anonymize each service's data according to the approved retention schedule and record any lawful hold. This control
 does not claim legal sign-off or replace the DPIA.
+
+Operational processing is append-only: review start, lawful hold, fulfilment, and rejection are separate immutable
+events. A lawful hold requires a stated legal basis and future retention date. Terminal requests cannot be reopened or
+rewritten, and workflow writes require the internal service credential.
