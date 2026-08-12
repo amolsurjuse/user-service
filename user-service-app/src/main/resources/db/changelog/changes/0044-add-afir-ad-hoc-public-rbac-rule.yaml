@@ -37,7 +37,7 @@ databaseChangeLog:
                 effect, allow_anonymous, required_roles
               )
               SELECT
-                '00000000-0000-0000-0000-000000001144'::uuid,
+                '7e797a20-fd8c-4c53-95a0-995243ef0050'::uuid,
                 policy_id,
                 max_sort_order + 1,
                 'afir-ad-hoc-charging-public',
@@ -57,4 +57,4 @@ databaseChangeLog:
             dbms: postgresql
             sql: |
               DELETE FROM rbac_policy_rules
-              WHERE id = '00000000-0000-0000-0000-000000001144'::uuid;
+              WHERE id = '7e797a20-fd8c-4c53-95a0-995243ef0050'::uuid;
