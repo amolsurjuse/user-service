@@ -92,14 +92,24 @@ class UserManagementServiceTest {
         when(unitedStates.getIsoCode()).thenReturn("US");
         when(unitedStates.getName()).thenReturn("United States");
         when(unitedStates.getDialCode()).thenReturn("+1");
+        Country germany = org.mockito.Mockito.mock(Country.class);
+        when(germany.getIsoCode()).thenReturn("DE");
+        when(germany.getName()).thenReturn("Germany");
+        when(germany.getDialCode()).thenReturn("+49");
+        Country netherlands = org.mockito.Mockito.mock(Country.class);
+        when(netherlands.getIsoCode()).thenReturn("NL");
+        when(netherlands.getName()).thenReturn("Netherlands");
+        when(netherlands.getDialCode()).thenReturn("+31");
         when(countryRepository.findByEnabledTrueOrderByNameAsc())
-                .thenReturn(List.of(canada, india, unitedStates));
+                .thenReturn(List.of(canada, netherlands, india, unitedStates, germany));
 
         List<CountryResponse> countries = userManagementService.countries();
 
         assertThat(countries).containsExactly(
                 new CountryResponse("US", "United States", "+1"),
-                new CountryResponse("IN", "India", "+91")
+                new CountryResponse("IN", "India", "+91"),
+                new CountryResponse("DE", "Germany", "+49"),
+                new CountryResponse("NL", "Netherlands", "+31")
         );
     }
 

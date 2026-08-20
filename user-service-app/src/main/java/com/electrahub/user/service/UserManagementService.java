@@ -53,7 +53,7 @@ import java.util.UUID;
 @Service
 public class UserManagementService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserManagementService.class);
-    private static final List<String> SUPPORTED_COUNTRY_CODES = List.of("US", "IN");
+    private static final List<String> SUPPORTED_COUNTRY_CODES = List.of("US", "IN", "DE", "NL");
 
 
     private final UserRepository userRepository;

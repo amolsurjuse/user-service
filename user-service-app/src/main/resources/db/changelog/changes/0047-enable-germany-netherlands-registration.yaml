@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0047-enable-germany-netherlands-registration
+      author: codex
+      changes:
+        - update:
+            tableName: country
+            columns:
+              - column:
+                  name: enabled
+                  valueBoolean: true
+            where: iso_code IN ('DE', 'NL')
