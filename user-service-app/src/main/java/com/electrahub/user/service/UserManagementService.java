@@ -104,7 +104,11 @@ public class UserManagementService {
         user.setLastName(request.lastName());
         user.setPhoneNumber(request.phoneNumber());
 
-        Address address = buildRegistrationAddress(request.address(), request.phoneNumber());
+        boolean communityVoting = "COMMUNITY_VOTING".equalsIgnoreCase(request.application());
+        Address address = buildAddress(request.address());
+        if (!communityVoting && (address == null || address.getCountry() == null)) {
+            throw new IllegalArgumentException("A supported registration country is required");
+        }
         if (address != null) {
             addressRepository.save(address);
             user.setAddress(address);
@@ -113,7 +117,6 @@ public class UserManagementService {
         var userRole = roleRepository.findByName("USER")
                 .orElseThrow(() -> new IllegalStateException("Role USER not seeded"));
         user.addRole(userRole);
-        boolean communityVoting = "COMMUNITY_VOTING".equalsIgnoreCase(request.application());
         if (communityVoting) {
             var votingRole = roleRepository.findByName("COMMUNITY_VOTING_USER")
                     .orElseThrow(() -> new IllegalStateException("Role COMMUNITY_VOTING_USER not seeded"));
@@ -621,26 +624,6 @@ public class UserManagementService {
         );
     }
 
-    private Address buildRegistrationAddress(AddressDto dto, String phoneNumber) {
-        Address suppliedAddress = buildAddress(dto);
-        if (suppliedAddress != null) {
-            return suppliedAddress;
-        }
-
-        String normalizedPhone = normalizeOptionalText(phoneNumber);
-        if (normalizedPhone == null) {
-            return null;
-        }
-
-        Country inferredCountry = countryRepository.findByEnabledTrueOrderByNameAsc().stream()
-                .filter(country -> normalizedPhone.startsWith(country.getDialCode()))
-                .filter(country -> SUPPORTED_COUNTRY_CODES.contains(country.getIsoCode()))
-                .max(Comparator.comparingInt(country -> country.getDialCode().length()))
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "A supported registration country is required"));
-
-        return new Address(UUID.randomUUID(), "", "", "", "", inferredCountry);
-    }
 
     /**
      * Processes apply address for `UserManagementService`.

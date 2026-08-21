@@ -177,7 +177,7 @@ class UserManagementServiceTest {
     }
 
     @Test
-    void registerPersistsAndProvisionsCountryInferredFromSelectedDialCode() {
+    void registerRejectsDriverWhenCountryIsMissing() {
         RegisterUserRequest request = new RegisterUserRequest(
                 "nl.driver@example.com",
                 "password123",
@@ -186,35 +186,7 @@ class UserManagementServiceTest {
                 "+31612345678",
                 null
         );
-        Country netherlands = org.mockito.Mockito.mock(Country.class);
-        when(netherlands.getIsoCode()).thenReturn("NL");
-        when(netherlands.getDialCode()).thenReturn("+31");
-        Role userRole = org.mockito.Mockito.mock(Role.class);
-        when(userRole.getName()).thenReturn("USER");
         when(userRepository.existsByEmail("nl.driver@example.com")).thenReturn(false);
-        when(countryRepository.findByEnabledTrueOrderByNameAsc()).thenReturn(List.of(netherlands));
-        when(roleRepository.findByName("USER")).thenReturn(java.util.Optional.of(userRole));
-
-        userManagementService.register(request);
-
-        verify(addressRepository).save(argThat(address ->
-                address.getCountry() == netherlands));
-        verify(paymentProvisioningClient).createWallet(
-                org.mockito.ArgumentMatchers.anyString(), eq("NL"));
-    }
-
-    @Test
-    void registerRejectsPhoneWhoseCountryCannotBeResolved() {
-        RegisterUserRequest request = new RegisterUserRequest(
-                "unknown.driver@example.com",
-                "password123",
-                "Unknown",
-                "Driver",
-                "+99912345678",
-                null
-        );
-        when(userRepository.existsByEmail("unknown.driver@example.com")).thenReturn(false);
-        when(countryRepository.findByEnabledTrueOrderByNameAsc()).thenReturn(List.of());
 
         assertThatThrownBy(() -> userManagementService.register(request))
                 .isInstanceOf(IllegalArgumentException.class)
