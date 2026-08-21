@@ -8,6 +8,7 @@ import com.electrahub.user.api.dto.UserCountResponse;
 import com.electrahub.user.api.dto.UserSearchResponse;
 import com.electrahub.user.api.dto.UpdateUserProfileRequest;
 import com.electrahub.user.api.dto.CountryResponse;
+import com.electrahub.user.api.dto.AccountDeletionRequest;
 import com.electrahub.user.domain.Role;
 import com.electrahub.user.domain.User;
 import com.electrahub.user.domain.Country;
@@ -173,6 +174,47 @@ class UserManagementServiceTest {
         assertThat(profile.countryCode()).isEqualTo("US");
         assertThat(profile.countryName()).isEqualTo("United States");
         assertThat(profile.countryDialCode()).isEqualTo("+1");
+    }
+
+    @Test
+    void accountDeletionRequiresConfirmationBeforeDeleting() {
+        UUID userId = UUID.randomUUID();
+        setCurrentUser(userId, "driver@example.com", "USER");
+        User user = createUser("driver@example.com", "USER");
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+
+        var response = userManagementService.requestAccountDeletion(
+                userId, new AccountDeletionRequest(false));
+
+        assertThat(response.decision()).isEqualTo("CONFIRM_DIRECT_DELETION");
+        assertThat(response.deleted()).isFalse();
+        verify(userRepository, never()).delete(user);
+    }
+
+    @Test
+    void confirmedAccountDeletionDeletesOnlyAuthenticatedUsersOwnRecord() {
+        UUID userId = UUID.randomUUID();
+        setCurrentUser(userId, "driver@example.com", "USER");
+        User user = createUser("driver@example.com", "USER");
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+
+        var response = userManagementService.requestAccountDeletion(
+                userId, new AccountDeletionRequest(true));
+
+        assertThat(response.decision()).isEqualTo("ACCOUNT_DELETED");
+        assertThat(response.deleted()).isTrue();
+        verify(userRepository).delete(user);
+    }
+
+    @Test
+    void accountDeletionRejectsDifferentUserId() {
+        UUID actorId = UUID.randomUUID();
+        setCurrentUser(actorId, "driver@example.com", "USER");
+
+        assertThatThrownBy(() -> userManagementService.requestAccountDeletion(
+                UUID.randomUUID(), new AccountDeletionRequest(true)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("You can delete only your own account.");
     }
 
     @Test

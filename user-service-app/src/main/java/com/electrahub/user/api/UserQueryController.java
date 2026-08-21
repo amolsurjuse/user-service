@@ -7,6 +7,8 @@ import com.electrahub.user.api.dto.UserPrincipalResponse;
 import com.electrahub.user.api.dto.UserProfileResponse;
 import com.electrahub.user.api.dto.UserSearchResponse;
 import com.electrahub.user.api.dto.UpdateUserProfileRequest;
+import com.electrahub.user.api.dto.AccountDeletionRequest;
+import com.electrahub.user.api.dto.AccountDeletionResponse;
 import com.electrahub.user.service.UserManagementService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.UUID;
 
@@ -75,6 +78,15 @@ public class UserQueryController {
     public UserProfileResponse updateProfile(@PathVariable UUID userId,
                                              @Valid @RequestBody UpdateUserProfileRequest request) {
         return userManagementService.updateProfile(userId, request);
+    }
+
+    @PostMapping("/{userId}/account-deletion")
+    @PreAuthorize("hasRole('USER')")
+    public AccountDeletionResponse requestAccountDeletion(
+            @PathVariable UUID userId,
+            @Valid @RequestBody AccountDeletionRequest request
+    ) {
+        return userManagementService.requestAccountDeletion(userId, request);
     }
 
     @GetMapping

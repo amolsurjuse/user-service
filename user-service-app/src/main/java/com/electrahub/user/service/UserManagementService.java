@@ -14,6 +14,8 @@ import com.electrahub.user.api.dto.CountryResponse;
 import com.electrahub.user.api.dto.RegisterUserRequest;
 import com.electrahub.user.api.dto.ResetUserPasswordRequest;
 import com.electrahub.user.api.dto.UpdateUserProfileRequest;
+import com.electrahub.user.api.dto.AccountDeletionRequest;
+import com.electrahub.user.api.dto.AccountDeletionResponse;
 import com.electrahub.user.api.dto.UserCountResponse;
 import com.electrahub.user.api.dto.UserProfileResponse;
 import com.electrahub.user.api.dto.BillingProfileResponse;
@@ -40,6 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -544,6 +547,53 @@ public class UserManagementService {
             addressRepository.delete(address);
         }
         LOGGER.info("User deletion completed for targetUserId={}", userId);
+    }
+
+    @Transactional
+    public AccountDeletionResponse requestAccountDeletion(UUID userId, AccountDeletionRequest request) {
+        AuthenticatedUser actor = currentUser();
+        if (!actor.userId().equals(userId)) {
+            throw new AccessDeniedException("You can delete only your own account.");
+        }
+
+        User user = loadUser(userId);
+        if (!request.confirmDirectDeletion()) {
+            return new AccountDeletionResponse(
+                    "CONFIRM_DIRECT_DELETION",
+                    "Confirm permanent deletion of your account and profile data.",
+                    BigDecimal.ZERO,
+                    false,
+                    false,
+                    false,
+                    true,
+                    null
+            );
+        }
+
+        deleteUserRecord(user);
+        LOGGER.warn("Self-service account deletion completed for userId={}", userId);
+        return new AccountDeletionResponse(
+                "ACCOUNT_DELETED",
+                "Your account has been permanently deleted.",
+                BigDecimal.ZERO,
+                false,
+                false,
+                true,
+                true,
+                OffsetDateTime.now()
+        );
+    }
+
+    private void deleteUserRecord(User user) {
+        Address address = user.getAddress();
+        user.getRoles().clear();
+        user.setAddress(null);
+        userRepository.saveAndFlush(user);
+        userRepository.delete(user);
+        userRepository.flush();
+        if (address != null) {
+            addressRepository.delete(address);
+        }
     }
 
     /**
