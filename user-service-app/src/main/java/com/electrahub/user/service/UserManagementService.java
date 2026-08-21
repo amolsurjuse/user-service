@@ -104,7 +104,7 @@ public class UserManagementService {
         user.setLastName(request.lastName());
         user.setPhoneNumber(request.phoneNumber());
 
-        Address address = buildAddress(request.address());
+        Address address = buildRegistrationAddress(request.address(), request.phoneNumber());
         if (address != null) {
             addressRepository.save(address);
             user.setAddress(address);
@@ -619,6 +619,27 @@ public class UserManagementService {
                 normalizeText(dto.postalCode()),
                 country
         );
+    }
+
+    private Address buildRegistrationAddress(AddressDto dto, String phoneNumber) {
+        Address suppliedAddress = buildAddress(dto);
+        if (suppliedAddress != null) {
+            return suppliedAddress;
+        }
+
+        String normalizedPhone = normalizeOptionalText(phoneNumber);
+        if (normalizedPhone == null) {
+            return null;
+        }
+
+        Country inferredCountry = countryRepository.findByEnabledTrueOrderByNameAsc().stream()
+                .filter(country -> normalizedPhone.startsWith(country.getDialCode()))
+                .filter(country -> SUPPORTED_COUNTRY_CODES.contains(country.getIsoCode()))
+                .max(Comparator.comparingInt(country -> country.getDialCode().length()))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "A supported registration country is required"));
+
+        return new Address(UUID.randomUUID(), "", "", "", "", inferredCountry);
     }
 
     /**
