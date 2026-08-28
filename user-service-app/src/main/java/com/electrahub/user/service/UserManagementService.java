@@ -20,6 +20,7 @@ import com.electrahub.user.api.dto.UserCountResponse;
 import com.electrahub.user.api.dto.UserProfileResponse;
 import com.electrahub.user.api.dto.BillingProfileResponse;
 import com.electrahub.user.api.dto.UserPrincipalResponse;
+import com.electrahub.user.api.dto.UserAudienceProfileResponse;
 import com.electrahub.user.api.dto.UserSearchResponse;
 import com.electrahub.user.api.dto.UserSummaryResponse;
 import com.electrahub.user.api.error.ConflictException;
@@ -180,6 +181,16 @@ public class UserManagementService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + userId));
         return toPrincipal(user);
+    }
+
+    @Transactional(readOnly = true)
+    public UserAudienceProfileResponse getAudienceProfile(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+        String countryCode = user.getAddress() != null && user.getAddress().getCountry() != null
+                ? user.getAddress().getCountry().getIsoCode()
+                : null;
+        return new UserAudienceProfileResponse(user.getId(), user.getTenantId(), countryCode, user.getCreatedAt());
     }
 
     @Transactional(readOnly = true)
